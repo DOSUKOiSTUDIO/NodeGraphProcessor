@@ -215,11 +215,11 @@ namespace GraphProcessor
 	}
 
 	[AttributeUsage(AttributeTargets.Field, AllowMultiple = false)]
-	public class ShowInInspector : Attribute
+	public class ShowInGraphInspector : Attribute
 	{
 		public bool showInNode;
 
-		public ShowInInspector(bool showInNode = false)
+		public ShowInGraphInspector(bool showInNode = false)
 		{
 			this.showInNode = showInNode;
 		}

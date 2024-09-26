@@ -13,9 +13,9 @@ public class InspectorNode : BaseNode
 	[Output(name = "Out")]
 	public float				output;
 
-	[ShowInInspector]
+	[ShowInGraphInspector]
 	public bool additionalSettings;
-	[ShowInInspector]
+	[ShowInGraphInspector]
 	public string additionalParam;
 
 	public override string		name => "InspectorNode";

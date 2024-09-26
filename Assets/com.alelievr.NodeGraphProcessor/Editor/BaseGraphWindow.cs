@@ -12,7 +12,8 @@ namespace GraphProcessor
 	public abstract class BaseGraphWindow : EditorWindow
 	{
 		protected VisualElement		rootView;
-		protected BaseGraphView		graphView;
+		//DOSUKOI
+		public BaseGraphView		graphView;
 
 		[SerializeField]
 		protected BaseGraph			graph;

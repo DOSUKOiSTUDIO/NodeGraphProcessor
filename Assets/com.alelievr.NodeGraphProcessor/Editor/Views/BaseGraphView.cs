@@ -9,416 +9,420 @@ using System.Linq;
 using System;
 using UnityEditor.SceneManagement;
 using System.Reflection;
-
 using Status = UnityEngine.UIElements.DropdownMenuAction.Status;
 using Object = UnityEngine.Object;
 
 namespace GraphProcessor
 {
-	/// <summary>
-	/// Base class to write a custom view for a node
-	/// </summary>
-	public class BaseGraphView : GraphView, IDisposable
-	{
-		public delegate void ComputeOrderUpdatedDelegate();
-		public delegate void NodeDuplicatedDelegate(BaseNode duplicatedNode, BaseNode newNode);
+    /// <summary>
+    /// Base class to write a custom view for a node
+    /// </summary>
+    public class BaseGraphView : GraphView, IDisposable
+    {
+        public delegate void ComputeOrderUpdatedDelegate();
 
-		/// <summary>
-		/// Graph that owns of the node
-		/// </summary>
-		public BaseGraph							graph;
+        public delegate void NodeDuplicatedDelegate(BaseNode duplicatedNode, BaseNode newNode);
 
-		/// <summary>
-		/// Connector listener that will create the edges between ports
-		/// </summary>
-		public BaseEdgeConnectorListener			connectorListener;
+        /// <summary>
+        /// Graph that owns of the node
+        /// </summary>
+        public BaseGraph graph;
 
-		/// <summary>
-		/// List of all node views in the graph
-		/// </summary>
-		/// <typeparam name="BaseNodeView"></typeparam>
-		/// <returns></returns>
-		public List< BaseNodeView >					nodeViews = new List< BaseNodeView >();
+        /// <summary>
+        /// Connector listener that will create the edges between ports
+        /// </summary>
+        public BaseEdgeConnectorListener connectorListener;
 
-		/// <summary>
-		/// Dictionary of the node views accessed view the node instance, faster than a Find in the node view list
-		/// </summary>
-		/// <typeparam name="BaseNode"></typeparam>
-		/// <typeparam name="BaseNodeView"></typeparam>
-		/// <returns></returns>
-		public Dictionary< BaseNode, BaseNodeView >	nodeViewsPerNode = new Dictionary< BaseNode, BaseNodeView >();
+        /// <summary>
+        /// List of all node views in the graph
+        /// </summary>
+        /// <typeparam name="BaseNodeView"></typeparam>
+        /// <returns></returns>
+        public List<BaseNodeView> nodeViews = new();
 
-		/// <summary>
-		/// List of all edge views in the graph
-		/// </summary>
-		/// <typeparam name="EdgeView"></typeparam>
-		/// <returns></returns>
-		public List< EdgeView >						edgeViews = new List< EdgeView >();
+        /// <summary>
+        /// Dictionary of the node views accessed view the node instance, faster than a Find in the node view list
+        /// </summary>
+        /// <typeparam name="BaseNode"></typeparam>
+        /// <typeparam name="BaseNodeView"></typeparam>
+        /// <returns></returns>
+        public Dictionary<BaseNode, BaseNodeView> nodeViewsPerNode = new();
 
-		/// <summary>
-		/// List of all group views in the graph
-		/// </summary>
-		/// <typeparam name="GroupView"></typeparam>
-		/// <returns></returns>
-        public List< GroupView >         			groupViews = new List< GroupView >();
+        /// <summary>
+        /// List of all edge views in the graph
+        /// </summary>
+        /// <typeparam name="EdgeView"></typeparam>
+        /// <returns></returns>
+        public List<EdgeView> edgeViews = new();
+
+        /// <summary>
+        /// List of all group views in the graph
+        /// </summary>
+        /// <typeparam name="GroupView"></typeparam>
+        /// <returns></returns>
+        public List<GroupView> groupViews = new();
 
 #if UNITY_2020_1_OR_NEWER
-		/// <summary>
-		/// List of all sticky note views in the graph
-		/// </summary>
-		/// <typeparam name="StickyNoteView"></typeparam>
-		/// <returns></returns>
-		public List< StickyNoteView >				stickyNoteViews = new List<StickyNoteView>();
+        /// <summary>
+        /// List of all sticky note views in the graph
+        /// </summary>
+        /// <typeparam name="StickyNoteView"></typeparam>
+        /// <returns></returns>
+        public List<StickyNoteView> stickyNoteViews = new();
 #endif
 
-		/// <summary>
-		/// List of all stack node views in the graph
-		/// </summary>
-		/// <typeparam name="BaseStackNodeView"></typeparam>
-		/// <returns></returns>
-		public List< BaseStackNodeView >			stackNodeViews = new List< BaseStackNodeView >();
+        /// <summary>
+        /// List of all stack node views in the graph
+        /// </summary>
+        /// <typeparam name="BaseStackNodeView"></typeparam>
+        /// <returns></returns>
+        public List<BaseStackNodeView> stackNodeViews = new();
 
-		Dictionary< Type, PinnedElementView >		pinnedElements = new Dictionary< Type, PinnedElementView >();
+        private Dictionary<Type, PinnedElementView> pinnedElements = new();
 
-		CreateNodeMenuWindow						createNodeMenu;
+        private CreateNodeMenuWindow createNodeMenu;
 
-		/// <summary>
-		/// Triggered just after the graph is initialized
-		/// </summary>
-		public event Action							initialized;
+        /// <summary>
+        /// Triggered just after the graph is initialized
+        /// </summary>
+        public event Action initialized;
 
-		/// <summary>
-		/// Triggered just after the compute order of the graph is updated
-		/// </summary>
-		public event ComputeOrderUpdatedDelegate	computeOrderUpdated;
+        /// <summary>
+        /// Triggered just after the compute order of the graph is updated
+        /// </summary>
+        public event ComputeOrderUpdatedDelegate computeOrderUpdated;
 
-		// Safe event relay from BaseGraph (safe because you are sure to always point on a valid BaseGraph
-		// when one of these events is called), a graph switch can occur between two call tho
-		/// <summary>
-		/// Same event than BaseGraph.onExposedParameterListChanged
-		/// Safe event (not triggered in case the graph is null).
-		/// </summary>
-		public event Action				onExposedParameterListChanged;
+        // Safe event relay from BaseGraph (safe because you are sure to always point on a valid BaseGraph
+        // when one of these events is called), a graph switch can occur between two call tho
+        /// <summary>
+        /// Same event than BaseGraph.onExposedParameterListChanged
+        /// Safe event (not triggered in case the graph is null).
+        /// </summary>
+        public event Action onExposedParameterListChanged;
 
-		/// <summary>
-		/// Same event than BaseGraph.onExposedParameterModified
-		/// Safe event (not triggered in case the graph is null).
-		/// </summary>
-		public event Action< ExposedParameter >	onExposedParameterModified;
+        /// <summary>
+        /// Same event than BaseGraph.onExposedParameterModified
+        /// Safe event (not triggered in case the graph is null).
+        /// </summary>
+        public event Action<ExposedParameter> onExposedParameterModified;
 
-		/// <summary>
-		/// Triggered when a node is duplicated (crt-d) or copy-pasted (crtl-c/crtl-v)
-		/// </summary>
-		public event NodeDuplicatedDelegate	nodeDuplicated;
+        /// <summary>
+        /// Triggered when a node is duplicated (crt-d) or copy-pasted (crtl-c/crtl-v)
+        /// </summary>
+        public event NodeDuplicatedDelegate nodeDuplicated;
 
-		/// <summary>
-		/// Object to handle nodes that shows their UI in the inspector.
-		/// </summary>
-		[SerializeField]
-		protected NodeInspectorObject		nodeInspector
-		{
-			get
-			{
+        /// <summary>
+        /// Object to handle nodes that shows their UI in the inspector.
+        /// </summary>
+        [SerializeField]
+        protected NodeInspectorObject nodeInspector
+        {
+            get
+            {
+                if (graph.nodeInspectorReference == null)
+                    graph.nodeInspectorReference = CreateNodeInspectorObject();
+                return graph.nodeInspectorReference as NodeInspectorObject;
+            }
+        }
 
-				if (graph.nodeInspectorReference == null)
-					graph.nodeInspectorReference = CreateNodeInspectorObject();
-				return graph.nodeInspectorReference as NodeInspectorObject;
-			}
-		}
+        /// <summary>
+        /// Workaround object for creating exposed parameter property fields.
+        /// </summary>
+        public ExposedParameterFieldFactory exposedParameterFactory { get; private set; }
 
-		/// <summary>
-		/// Workaround object for creating exposed parameter property fields.
-		/// </summary>
-		public ExposedParameterFieldFactory exposedParameterFactory { get; private set; }
+        public SerializedObject serializedGraph { get; private set; }
 
-		public SerializedObject		serializedGraph { get; private set; }
+        private Dictionary<Type, (Type nodeType, MethodInfo initalizeNodeFromObject)>
+            nodeTypePerCreateAssetType = new();
 
-		Dictionary<Type, (Type nodeType, MethodInfo initalizeNodeFromObject)> nodeTypePerCreateAssetType = new Dictionary<Type, (Type, MethodInfo)>();
-
-		public BaseGraphView(EditorWindow window)
-		{
-			serializeGraphElements = SerializeGraphElementsCallback;
-			canPasteSerializedData = CanPasteSerializedDataCallback;
-			unserializeAndPaste = UnserializeAndPasteCallback;
+        public BaseGraphView(EditorWindow window)
+        {
+            serializeGraphElements = SerializeGraphElementsCallback;
+            canPasteSerializedData = CanPasteSerializedDataCallback;
+            unserializeAndPaste = UnserializeAndPasteCallback;
             graphViewChanged = GraphViewChangedCallback;
-			viewTransformChanged = ViewTransformChangedCallback;
+            viewTransformChanged = ViewTransformChangedCallback;
             elementResized = ElementResizedCallback;
 
-			RegisterCallback< KeyDownEvent >(KeyDownCallback);
-			RegisterCallback< DragPerformEvent >(DragPerformedCallback);
-			RegisterCallback< DragUpdatedEvent >(DragUpdatedCallback);
-			RegisterCallback< MouseDownEvent >(MouseDownCallback);
-			RegisterCallback< MouseUpEvent >(MouseUpCallback);
+            RegisterCallback<KeyDownEvent>(KeyDownCallback);
+            RegisterCallback<DragPerformEvent>(DragPerformedCallback);
+            RegisterCallback<DragUpdatedEvent>(DragUpdatedCallback);
+            RegisterCallback<MouseDownEvent>(MouseDownCallback);
+            RegisterCallback<MouseUpEvent>(MouseUpCallback);
 
-			InitializeManipulators();
+            InitializeManipulators();
 
-			SetupZoom(0.05f, 2f);
+            SetupZoom(0.05f, 2f);
 
-			Undo.undoRedoPerformed += ReloadView;
+            Undo.undoRedoPerformed += ReloadView;
 
-			createNodeMenu = ScriptableObject.CreateInstance< CreateNodeMenuWindow >();
-			createNodeMenu.Initialize(this, window);
+            createNodeMenu = ScriptableObject.CreateInstance<CreateNodeMenuWindow>();
+            createNodeMenu.Initialize(this, window);
 
-			this.StretchToParentSize();
-		}
+            this.StretchToParentSize();
+        }
 
-		protected virtual NodeInspectorObject CreateNodeInspectorObject()
-		{
-			var inspector = ScriptableObject.CreateInstance<NodeInspectorObject>();
-			inspector.name = "Node Inspector";
-			inspector.hideFlags = HideFlags.HideAndDontSave ^ HideFlags.NotEditable;
+        protected virtual NodeInspectorObject CreateNodeInspectorObject()
+        {
+            var inspector = ScriptableObject.CreateInstance<NodeInspectorObject>();
+            inspector.name = "Node Inspector";
+            inspector.hideFlags = HideFlags.HideAndDontSave ^ HideFlags.NotEditable;
 
-			return inspector;
-		}
+            return inspector;
+        }
 
-		#region Callbacks
+        #region Callbacks
 
-		protected override bool canCopySelection
-		{
+        protected override bool canCopySelection
+        {
             get { return selection.Any(e => e is BaseNodeView || e is GroupView); }
-		}
+        }
 
-		protected override bool canCutSelection
-		{
+        protected override bool canCutSelection
+        {
             get { return selection.Any(e => e is BaseNodeView || e is GroupView); }
-		}
+        }
 
-		string SerializeGraphElementsCallback(IEnumerable<GraphElement> elements)
-		{
-			var data = new CopyPasteHelper();
+        private string SerializeGraphElementsCallback(IEnumerable<GraphElement> elements)
+        {
+            var data = new CopyPasteHelper();
 
-			foreach (BaseNodeView nodeView in elements.Where(e => e is BaseNodeView))
-			{
-				data.copiedNodes.Add(JsonSerializer.SerializeNode(nodeView.nodeTarget));
-				foreach (var port in nodeView.nodeTarget.GetAllPorts())
-				{
-					if (port.portData.vertical)
-					{
-						foreach (var edge in port.GetEdges())
-							data.copiedEdges.Add(JsonSerializer.Serialize(edge));
-					}
-				}
-			}
+            foreach (BaseNodeView nodeView in elements.Where(e => e is BaseNodeView))
+            {
+                data.copiedNodes.Add(JsonSerializer.SerializeNode(nodeView.nodeTarget));
+                foreach (var port in nodeView.nodeTarget.GetAllPorts())
+                    if (port.portData.vertical)
+                        foreach (var edge in port.GetEdges())
+                            data.copiedEdges.Add(JsonSerializer.Serialize(edge));
+            }
 
-			foreach (GroupView groupView in elements.Where(e => e is GroupView))
-				data.copiedGroups.Add(JsonSerializer.Serialize(groupView.group));
+            foreach (GroupView groupView in elements.Where(e => e is GroupView))
+                data.copiedGroups.Add(JsonSerializer.Serialize(groupView.group));
 
-			foreach (EdgeView edgeView in elements.Where(e => e is EdgeView))
-				data.copiedEdges.Add(JsonSerializer.Serialize(edgeView.serializedEdge));
+            foreach (EdgeView edgeView in elements.Where(e => e is EdgeView))
+                data.copiedEdges.Add(JsonSerializer.Serialize(edgeView.serializedEdge));
 
-			ClearSelection();
+            ClearSelection();
 
-			return JsonUtility.ToJson(data, true);
-		}
+            return JsonUtility.ToJson(data, true);
+        }
 
-		bool CanPasteSerializedDataCallback(string serializedData)
-		{
-			try {
-				return JsonUtility.FromJson(serializedData, typeof(CopyPasteHelper)) != null;
-			} catch {
-				return false;
-			}
-		}
+        private bool CanPasteSerializedDataCallback(string serializedData)
+        {
+            try
+            {
+                return JsonUtility.FromJson(serializedData, typeof(CopyPasteHelper)) != null;
+            }
+            catch
+            {
+                return false;
+            }
+        }
 
-		void UnserializeAndPasteCallback(string operationName, string serializedData)
-		{
-			var data = JsonUtility.FromJson< CopyPasteHelper >(serializedData);
+        private void UnserializeAndPasteCallback(string operationName, string serializedData)
+        {
+            var data = JsonUtility.FromJson<CopyPasteHelper>(serializedData);
 
             RegisterCompleteObjectUndo(operationName);
 
-			Dictionary<string, BaseNode> copiedNodesMap = new Dictionary<string, BaseNode>();
+            var copiedNodesMap = new Dictionary<string, BaseNode>();
 
-			var unserializedGroups = data.copiedGroups.Select(g => JsonSerializer.Deserialize<Group>(g)).ToList();
+            var unserializedGroups = data.copiedGroups.Select(g => JsonSerializer.Deserialize<Group>(g)).ToList();
 
-			foreach (var serializedNode in data.copiedNodes)
-			{
-				var node = JsonSerializer.DeserializeNode(serializedNode);
+            foreach (var serializedNode in data.copiedNodes)
+            {
+                var node = JsonSerializer.DeserializeNode(serializedNode);
 
-				if (node == null)
-					continue ;
+                if (node == null)
+                    continue;
 
-				string sourceGUID = node.GUID;
-				graph.nodesPerGUID.TryGetValue(sourceGUID, out var sourceNode);
-				//Call OnNodeCreated on the new fresh copied node
-				node.createdFromDuplication = true;
-				node.createdWithinGroup = unserializedGroups.Any(g => g.innerNodeGUIDs.Contains(sourceGUID));
-				node.OnNodeCreated();
-				//And move a bit the new node
-				node.position.position += new Vector2(20, 20);
+                var sourceGUID = node.GUID;
+                graph.nodesPerGUID.TryGetValue(sourceGUID, out var sourceNode);
+                //Call OnNodeCreated on the new fresh copied node
+                node.createdFromDuplication = true;
+                node.createdWithinGroup = unserializedGroups.Any(g => g.innerNodeGUIDs.Contains(sourceGUID));
+                node.OnNodeCreated();
+                //And move a bit the new node
+                node.position.position += new Vector2(20, 20);
 
-				var newNodeView = AddNode(node);
+                var newNodeView = AddNode(node);
 
-				// If the nodes were copied from another graph, then the source is null
-				if (sourceNode != null)
-					nodeDuplicated?.Invoke(sourceNode, node);
-				copiedNodesMap[sourceGUID] = node;
+                // If the nodes were copied from another graph, then the source is null
+                if (sourceNode != null)
+                    nodeDuplicated?.Invoke(sourceNode, node);
+                copiedNodesMap[sourceGUID] = node;
 
-				//Select the new node
-				AddToSelection(nodeViewsPerNode[node]);
-			}
+                //Select the new node
+                AddToSelection(nodeViewsPerNode[node]);
+            }
 
             foreach (var group in unserializedGroups)
             {
                 //Same than for node
                 group.OnCreated();
 
-				// try to centre the created node in the screen
+                // try to centre the created node in the screen
                 group.position.position += new Vector2(20, 20);
 
-				var oldGUIDList = group.innerNodeGUIDs.ToList();
-				group.innerNodeGUIDs.Clear();
-				foreach (var guid in oldGUIDList)
-				{
-					graph.nodesPerGUID.TryGetValue(guid, out var node);
-					
-					// In case group was copied from another graph
-					if (node == null)
-					{
-						copiedNodesMap.TryGetValue(guid, out node);
-						group.innerNodeGUIDs.Add(node.GUID);
-					}
-					else
-					{
-						group.innerNodeGUIDs.Add(copiedNodesMap[guid].GUID);
-					}
-				}
+                var oldGUIDList = group.innerNodeGUIDs.ToList();
+                group.innerNodeGUIDs.Clear();
+                foreach (var guid in oldGUIDList)
+                {
+                    graph.nodesPerGUID.TryGetValue(guid, out var node);
+
+                    // In case group was copied from another graph
+                    if (node == null)
+                    {
+                        copiedNodesMap.TryGetValue(guid, out node);
+                        group.innerNodeGUIDs.Add(node.GUID);
+                    }
+                    else
+                    {
+                        group.innerNodeGUIDs.Add(copiedNodesMap[guid].GUID);
+                    }
+                }
 
                 AddGroup(group);
             }
 
             foreach (var serializedEdge in data.copiedEdges)
-			{
-				var edge = JsonSerializer.Deserialize<SerializableEdge>(serializedEdge);
+            {
+                var edge = JsonSerializer.Deserialize<SerializableEdge>(serializedEdge);
 
-				edge.Deserialize();
+                edge.Deserialize();
 
-				// Find port of new nodes:
-				copiedNodesMap.TryGetValue(edge.inputNode.GUID, out var oldInputNode);
-				copiedNodesMap.TryGetValue(edge.outputNode.GUID, out var oldOutputNode);
+                // Find port of new nodes:
+                copiedNodesMap.TryGetValue(edge.inputNode.GUID, out var oldInputNode);
+                copiedNodesMap.TryGetValue(edge.outputNode.GUID, out var oldOutputNode);
 
-				// We avoid to break the graph by replacing unique connections:
-				if (oldInputNode == null && !edge.inputPort.portData.acceptMultipleEdges || !edge.outputPort.portData.acceptMultipleEdges)
-					continue;
+                // We avoid to break the graph by replacing unique connections:
+                if ((oldInputNode == null && !edge.inputPort.portData.acceptMultipleEdges) ||
+                    !edge.outputPort.portData.acceptMultipleEdges)
+                    continue;
 
-				oldInputNode = oldInputNode ?? edge.inputNode;
-				oldOutputNode = oldOutputNode ?? edge.outputNode;
+                oldInputNode = oldInputNode ?? edge.inputNode;
+                oldOutputNode = oldOutputNode ?? edge.outputNode;
 
-				var inputPort = oldInputNode.GetPort(edge.inputPort.fieldName, edge.inputPortIdentifier);
-				var outputPort = oldOutputNode.GetPort(edge.outputPort.fieldName, edge.outputPortIdentifier);
+                var inputPort = oldInputNode.GetPort(edge.inputPort.fieldName, edge.inputPortIdentifier);
+                var outputPort = oldOutputNode.GetPort(edge.outputPort.fieldName, edge.outputPortIdentifier);
 
-				var newEdge = SerializableEdge.CreateNewEdge(graph, inputPort, outputPort);
+                var newEdge = SerializableEdge.CreateNewEdge(graph, inputPort, outputPort);
 
-				if (nodeViewsPerNode.ContainsKey(oldInputNode) && nodeViewsPerNode.ContainsKey(oldOutputNode))
-				{
-					var edgeView = CreateEdgeView();
-					edgeView.userData = newEdge;
-					edgeView.input = nodeViewsPerNode[oldInputNode].GetPortViewFromFieldName(newEdge.inputFieldName, newEdge.inputPortIdentifier);
-					edgeView.output = nodeViewsPerNode[oldOutputNode].GetPortViewFromFieldName(newEdge.outputFieldName, newEdge.outputPortIdentifier);
+                if (nodeViewsPerNode.ContainsKey(oldInputNode) && nodeViewsPerNode.ContainsKey(oldOutputNode))
+                {
+                    var edgeView = CreateEdgeView();
+                    edgeView.userData = newEdge;
+                    edgeView.input = nodeViewsPerNode[oldInputNode]
+                        .GetPortViewFromFieldName(newEdge.inputFieldName, newEdge.inputPortIdentifier);
+                    edgeView.output = nodeViewsPerNode[oldOutputNode]
+                        .GetPortViewFromFieldName(newEdge.outputFieldName, newEdge.outputPortIdentifier);
 
-					Connect(edgeView);
-				}
-			}
-		}
+                    Connect(edgeView);
+                }
+            }
+        }
 
         public virtual EdgeView CreateEdgeView()
         {
-			return new EdgeView();
+            return new EdgeView();
         }
 
-        GraphViewChange GraphViewChangedCallback(GraphViewChange changes)
-		{
-			if (changes.elementsToRemove != null)
-			{
-				RegisterCompleteObjectUndo("Remove Graph Elements");
+        private GraphViewChange GraphViewChangedCallback(GraphViewChange changes)
+        {
+            if (changes.elementsToRemove != null)
+            {
+                RegisterCompleteObjectUndo("Remove Graph Elements");
 
-				// Destroy priority of objects
-				// We need nodes to be destroyed first because we can have a destroy operation that uses node connections
-				changes.elementsToRemove.Sort((e1, e2) => {
-					int GetPriority(GraphElement e)
-					{
-						if (e is BaseNodeView)
-							return 0;
-						else
-							return 1;
-					}
-					return GetPriority(e1).CompareTo(GetPriority(e2));
-				});
+                // Destroy priority of objects
+                // We need nodes to be destroyed first because we can have a destroy operation that uses node connections
+                changes.elementsToRemove.Sort((e1, e2) =>
+                {
+                    int GetPriority(GraphElement e)
+                    {
+                        if (e is BaseNodeView)
+                            return 0;
+                        else
+                            return 1;
+                    }
 
-				//Handle ourselves the edge and node remove
-				changes.elementsToRemove.RemoveAll(e => {
+                    return GetPriority(e1).CompareTo(GetPriority(e2));
+                });
 
-					switch (e)
-					{
-						case EdgeView edge:
-							Disconnect(edge);
-							return true;
-						case BaseNodeView nodeView:
-							// For vertical nodes, we need to delete them ourselves as it's not handled by GraphView
-							foreach (var pv in nodeView.inputPortViews.Concat(nodeView.outputPortViews))
-								if (pv.orientation == Orientation.Vertical)
-									foreach (var edge in pv.GetEdges().ToList())
-										Disconnect(edge);
+                //Handle ourselves the edge and node remove
+                changes.elementsToRemove.RemoveAll(e =>
+                {
+                    switch (e)
+                    {
+                        case EdgeView edge:
+                            Disconnect(edge);
+                            return true;
+                        case BaseNodeView nodeView:
+                            // For vertical nodes, we need to delete them ourselves as it's not handled by GraphView
+                            foreach (var pv in nodeView.inputPortViews.Concat(nodeView.outputPortViews))
+                                if (pv.orientation == Orientation.Vertical)
+                                    foreach (var edge in pv.GetEdges().ToList())
+                                        Disconnect(edge);
 
-							nodeInspector.NodeViewRemoved(nodeView);
-							ExceptionToLog.Call(() => nodeView.OnRemoved());
-							graph.RemoveNode(nodeView.nodeTarget);
-							UpdateSerializedProperties();
-							RemoveElement(nodeView);
-							if (Selection.activeObject == nodeInspector)
-								UpdateNodeInspectorSelection();
+                            nodeInspector.NodeViewRemoved(nodeView.nodeTarget);
+                            ExceptionToLog.Call(() => nodeView.OnRemoved());
+                            graph.RemoveNode(nodeView.nodeTarget);
+                            UpdateSerializedProperties();
+                            RemoveElement(nodeView);
+                            if (Selection.activeObject == nodeInspector)
+                                UpdateNodeInspectorSelection();
 
-							SyncSerializedPropertyPathes();
-							return true;
-						case GroupView group:
-							graph.RemoveGroup(group.group);
-							UpdateSerializedProperties();
-							RemoveElement(group);
-							return true;
-						case ExposedParameterFieldView blackboardField:
-							graph.RemoveExposedParameter(blackboardField.parameter);
-							UpdateSerializedProperties();
-							return true;
-						case BaseStackNodeView stackNodeView:
-							graph.RemoveStackNode(stackNodeView.stackNode);
-							UpdateSerializedProperties();
-							RemoveElement(stackNodeView);
-							return true;
+                            SyncSerializedPropertyPathes();
+                            return true;
+                        case GroupView group:
+                            graph.RemoveGroup(group.group);
+                            UpdateSerializedProperties();
+                            RemoveElement(group);
+                            return true;
+                        case ExposedParameterFieldView blackboardField:
+                            graph.RemoveExposedParameter(blackboardField.parameter);
+                            UpdateSerializedProperties();
+                            return true;
+                        case BaseStackNodeView stackNodeView:
+                            graph.RemoveStackNode(stackNodeView.stackNode);
+                            UpdateSerializedProperties();
+                            RemoveElement(stackNodeView);
+                            return true;
 #if UNITY_2020_1_OR_NEWER
-						case StickyNoteView stickyNoteView:
-							graph.RemoveStickyNote(stickyNoteView.note);
-							UpdateSerializedProperties();
-							RemoveElement(stickyNoteView);
-							return true;
+                        case StickyNoteView stickyNoteView:
+                            graph.RemoveStickyNote(stickyNoteView.note);
+                            UpdateSerializedProperties();
+                            RemoveElement(stickyNoteView);
+                            return true;
 #endif
-					}
+                    }
 
-					return false;
-				});
-			}
+                    return false;
+                });
+            }
 
-			return changes;
-		}
+            return changes;
+        }
 
-		void GraphChangesCallback(GraphChanges changes)
-		{
-			if (changes.removedEdge != null)
-			{
-				var edge = edgeViews.FirstOrDefault(e => e.serializedEdge == changes.removedEdge);
+        private void GraphChangesCallback(GraphChanges changes)
+        {
+            if (changes.removedEdge != null)
+            {
+                var edge = edgeViews.FirstOrDefault(e => e.serializedEdge == changes.removedEdge);
 
-				DisconnectView(edge);
-			}
-		}
+                DisconnectView(edge);
+            }
+        }
 
-		void ViewTransformChangedCallback(GraphView view)
-		{
-			if (graph != null)
-			{
-				graph.position = viewTransform.position;
-				graph.scale = viewTransform.scale;
-			}
-		}
+        private void ViewTransformChangedCallback(GraphView view)
+        {
+            if (graph != null)
+            {
+                graph.position = viewTransform.position;
+                graph.scale = viewTransform.scale;
+            }
+        }
 
-        void ElementResizedCallback(VisualElement elem)
+        private void ElementResizedCallback(VisualElement elem)
         {
             var groupView = elem as GroupView;
 
@@ -426,582 +430,612 @@ namespace GraphProcessor
                 groupView.group.size = groupView.GetPosition().size;
         }
 
-		public override List< Port > GetCompatiblePorts(Port startPort, NodeAdapter nodeAdapter)
-		{
-			var compatiblePorts = new List< Port >();
-
-			compatiblePorts.AddRange(ports.ToList().Where(p => {
-				var portView = p as PortView;
-
-				if (portView.owner == (startPort as PortView).owner)
-					return false;
-
-				if (p.direction == startPort.direction)
-					return false;
-
-				//Check for type assignability
-				if (!BaseGraph.TypesAreConnectable(startPort.portType, p.portType))
-					return false;
-
-				//Check if the edge already exists
-				if (portView.GetEdges().Any(e => e.input == startPort || e.output == startPort))
-					return false;
-
-				return true;
-			}));
-
-			return compatiblePorts;
-		}
-
-		/// <summary>
-		/// Build the contextual menu shown when right clicking inside the graph view
-		/// </summary>
-		/// <param name="evt"></param>
-		public override void BuildContextualMenu(ContextualMenuPopulateEvent evt)
-		{
-			base.BuildContextualMenu(evt);
-			BuildGroupContextualMenu(evt, 1);
-			BuildStickyNoteContextualMenu(evt, 2);
-			BuildViewContextualMenu(evt);
-			BuildSelectAssetContextualMenu(evt);
-			BuildSaveAssetContextualMenu(evt);
-			BuildHelpContextualMenu(evt);
-		}
-
-		/// <summary>
-		/// Add the New Group entry to the context menu
-		/// </summary>
-		/// <param name="evt"></param>
-		protected virtual void BuildGroupContextualMenu(ContextualMenuPopulateEvent evt, int menuPosition = -1)
-		{
-			if (menuPosition == -1)
-				menuPosition = evt.menu.MenuItems().Count;
-			Vector2 position = (evt.currentTarget as VisualElement).ChangeCoordinatesTo(contentViewContainer, evt.localMousePosition);
-            evt.menu.InsertAction(menuPosition, "Create Group", (e) => AddSelectionsToGroup(AddGroup(new Group("Create Group", position))), DropdownMenuAction.AlwaysEnabled);
-		}
-
-		/// <summary>
-		/// -Add the New Sticky Note entry to the context menu
-		/// </summary>
-		/// <param name="evt"></param>
-		protected virtual void BuildStickyNoteContextualMenu(ContextualMenuPopulateEvent evt, int menuPosition = -1)
-		{
-			if (menuPosition == -1)
-				menuPosition = evt.menu.MenuItems().Count;
-#if UNITY_2020_1_OR_NEWER
-			Vector2 position = (evt.currentTarget as VisualElement).ChangeCoordinatesTo(contentViewContainer, evt.localMousePosition);
-            evt.menu.InsertAction(menuPosition, "Create Sticky Note", (e) => AddStickyNote(new StickyNote("Create Note", position)), DropdownMenuAction.AlwaysEnabled);
-#endif
-		}
-
-		/// <summary>
-		/// Add the View entry to the context menu
-		/// </summary>
-		/// <param name="evt"></param>
-		protected virtual void BuildViewContextualMenu(ContextualMenuPopulateEvent evt)
-		{
-			evt.menu.AppendAction("View/Processor", (e) => ToggleView< ProcessorView >(), (e) => GetPinnedElementStatus< ProcessorView >());
-		}
-
-		/// <summary>
-		/// Add the Select Asset entry to the context menu
-		/// </summary>
-		/// <param name="evt"></param>
-		protected virtual void BuildSelectAssetContextualMenu(ContextualMenuPopulateEvent evt)
-		{
-			evt.menu.AppendAction("Select Asset", (e) => EditorGUIUtility.PingObject(graph), DropdownMenuAction.AlwaysEnabled);
-		}
-
-		/// <summary>
-		/// Add the Save Asset entry to the context menu
-		/// </summary>
-		/// <param name="evt"></param>
-		protected virtual void BuildSaveAssetContextualMenu(ContextualMenuPopulateEvent evt)
-		{
-			evt.menu.AppendAction("Save Asset", (e) => {
-				EditorUtility.SetDirty(graph);
-				AssetDatabase.SaveAssets();
-			}, DropdownMenuAction.AlwaysEnabled);
-		}
-
-		/// <summary>
-		/// Add the Help entry to the context menu
-		/// </summary>
-		/// <param name="evt"></param>
-		protected void BuildHelpContextualMenu(ContextualMenuPopulateEvent evt)
-		{
-			evt.menu.AppendAction("Help/Reset Pinned Windows", e => {
-				foreach (var kp in pinnedElements)
-					kp.Value.ResetPosition();
-			});
-		}
-
-		protected virtual void KeyDownCallback(KeyDownEvent e)
-		{
-			if (e.keyCode == KeyCode.S && e.commandKey)
-			{
-				SaveGraphToDisk();
-				e.StopPropagation();
-			}
-			else if(nodeViews.Count > 0 && e.commandKey && e.altKey)
-			{
-				//	Node Aligning shortcuts
-				switch(e.keyCode)
-				{
-					case KeyCode.LeftArrow:
-						nodeViews[0].AlignToLeft();
-						e.StopPropagation();
-						break;
-					case KeyCode.RightArrow:
-						nodeViews[0].AlignToRight();
-						e.StopPropagation();
-						break;
-					case KeyCode.UpArrow:
-						nodeViews[0].AlignToTop();
-						e.StopPropagation();
-						break;
-					case KeyCode.DownArrow:
-						nodeViews[0].AlignToBottom();
-						e.StopPropagation();
-						break;
-					case KeyCode.C:
-						nodeViews[0].AlignToCenter();
-						e.StopPropagation();
-						break;
-					case KeyCode.M:
-						nodeViews[0].AlignToMiddle();
-						e.StopPropagation();
-						break;
-				}
-			}
-		}
-
-		void MouseUpCallback(MouseUpEvent e)
-		{
-			schedule.Execute(() => {
-				if (DoesSelectionContainsInspectorNodes())
-					UpdateNodeInspectorSelection();
-			}).ExecuteLater(1);
-		}
-
-		void MouseDownCallback(MouseDownEvent e)
-		{
-			// When left clicking on the graph (not a node or something else)
-			if (e.button == 0)
-			{
-				// Close all settings windows:
-				nodeViews.ForEach(v => v.CloseSettings());
-			}
-
-			if (DoesSelectionContainsInspectorNodes())
-				UpdateNodeInspectorSelection();
-		}
-
-		bool DoesSelectionContainsInspectorNodes()
-		{
-			var selectedNodes = selection.Where(s => s is BaseNodeView).ToList();
-			var selectedNodesNotInInspector = selectedNodes.Except(nodeInspector.selectedNodes).ToList();
-			var nodeInInspectorWithoutSelectedNodes = nodeInspector.selectedNodes.Except(selectedNodes).ToList();
-
-			return selectedNodesNotInInspector.Any() || nodeInInspectorWithoutSelectedNodes.Any();
-		}
-
-		void DragPerformedCallback(DragPerformEvent e)
-		{
-			var mousePos = (e.currentTarget as VisualElement).ChangeCoordinatesTo(contentViewContainer, e.localMousePosition);
-			var dragData = DragAndDrop.GetGenericData("DragSelection") as List< ISelectable >;
-
-			// Drag and Drop for elements inside the graph
-			if (dragData != null)
-			{
-				var exposedParameterFieldViews = dragData.OfType<ExposedParameterFieldView>();
-				if (exposedParameterFieldViews.Any())
-				{
-					foreach (var paramFieldView in exposedParameterFieldViews)
-					{
-						RegisterCompleteObjectUndo("Create Parameter Node");
-						var paramNode = BaseNode.CreateFromType< ParameterNode >(mousePos);
-						paramNode.parameterGUID = paramFieldView.parameter.guid;
-						AddNode(paramNode);
-					}
-				}
-			}
-
-			// External objects drag and drop
-			if (DragAndDrop.objectReferences.Length > 0)
-			{
-				RegisterCompleteObjectUndo("Create Node From Object(s)");
-				foreach (var obj in DragAndDrop.objectReferences)
-				{
-					var objectType = obj.GetType();
-
-					foreach (var kp in nodeTypePerCreateAssetType)
-					{
-						if (kp.Key.IsAssignableFrom(objectType))
-						{
-							try
-							{
-								var node = BaseNode.CreateFromType(kp.Value.nodeType, mousePos);
-								if ((bool)kp.Value.initalizeNodeFromObject.Invoke(node, new []{obj}))
-								{
-									AddNode(node);
-									break;
-								}
-							}
-							catch (Exception exception)
-							{
-								Debug.LogException(exception);
-							}
-						}
-					}
-				}
-			}
-		}
-
-		void DragUpdatedCallback(DragUpdatedEvent e)
+        public override List<Port> GetCompatiblePorts(Port startPort, NodeAdapter nodeAdapter)
         {
-            var dragData = DragAndDrop.GetGenericData("DragSelection") as List<ISelectable>;
-			var dragObjects = DragAndDrop.objectReferences;
-            bool dragging = false;
+            var compatiblePorts = new List<Port>();
 
-            if (dragData != null)
+            compatiblePorts.AddRange(ports.ToList().Where(p =>
             {
-                // Handle drag from exposed parameter view
-                if (dragData.OfType<ExposedParameterFieldView>().Any())
-				{
-                    dragging = true;
-				}
-            }
+                var portView = p as PortView;
 
-			if (dragObjects.Length > 0)
-				dragging = true;
+                if (portView.owner == (startPort as PortView).owner)
+                    return false;
 
-            if (dragging)
-                DragAndDrop.visualMode = DragAndDropVisualMode.Generic;
+                if (p.direction == startPort.direction)
+                    return false;
 
-			UpdateNodeInspectorSelection();
+                //Check for type assignability
+                if (!BaseGraph.TypesAreConnectable(startPort.portType, p.portType))
+                    return false;
+
+                //Check if the edge already exists
+                if (portView.GetEdges().Any(e => e.input == startPort || e.output == startPort))
+                    return false;
+
+                return true;
+            }));
+
+            return compatiblePorts;
         }
 
-		#endregion
+        /// <summary>
+        /// Build the contextual menu shown when right clicking inside the graph view
+        /// </summary>
+        /// <param name="evt"></param>
+        public override void BuildContextualMenu(ContextualMenuPopulateEvent evt)
+        {
+            base.BuildContextualMenu(evt);
+            BuildGroupContextualMenu(evt, 1);
+            BuildStickyNoteContextualMenu(evt, 2);
+            BuildViewContextualMenu(evt);
+            BuildSelectAssetContextualMenu(evt);
+            BuildSaveAssetContextualMenu(evt);
+            BuildHelpContextualMenu(evt);
+        }
 
-		#region Initialization
+        /// <summary>
+        /// Add the New Group entry to the context menu
+        /// </summary>
+        /// <param name="evt"></param>
+        protected virtual void BuildGroupContextualMenu(ContextualMenuPopulateEvent evt, int menuPosition = -1)
+        {
+            if (menuPosition == -1)
+                menuPosition = evt.menu.MenuItems().Count;
+            var position =
+                (evt.currentTarget as VisualElement).ChangeCoordinatesTo(contentViewContainer, evt.localMousePosition);
+            evt.menu.InsertAction(menuPosition, "Create Group",
+                (e) => AddSelectionsToGroup(AddGroup(new Group("Create Group", position))),
+                DropdownMenuAction.AlwaysEnabled);
+        }
 
-		void ReloadView()
-		{
-			// Force the graph to reload his data (Undo have updated the serialized properties of the graph
-			// so the one that are not serialized need to be synchronized)
-			graph.Deserialize();
-
-			// Get selected nodes
-			var selectedNodeGUIDs = new List<string>();
-			foreach (var e in selection)
-			{
-				if (e is BaseNodeView v && this.Contains(v))
-					selectedNodeGUIDs.Add(v.nodeTarget.GUID);
-			}
-
-			// Remove everything
-			RemoveNodeViews();
-			RemoveEdges();
-			RemoveGroups();
+        /// <summary>
+        /// -Add the New Sticky Note entry to the context menu
+        /// </summary>
+        /// <param name="evt"></param>
+        protected virtual void BuildStickyNoteContextualMenu(ContextualMenuPopulateEvent evt, int menuPosition = -1)
+        {
+            if (menuPosition == -1)
+                menuPosition = evt.menu.MenuItems().Count;
 #if UNITY_2020_1_OR_NEWER
-			RemoveStrickyNotes();
+            var position =
+                (evt.currentTarget as VisualElement).ChangeCoordinatesTo(contentViewContainer, evt.localMousePosition);
+            evt.menu.InsertAction(menuPosition, "Create Sticky Note",
+                (e) => AddStickyNote(new StickyNote("Create Note", position)), DropdownMenuAction.AlwaysEnabled);
 #endif
-			RemoveStackNodeViews();
+        }
 
-			UpdateSerializedProperties();
+        /// <summary>
+        /// Add the View entry to the context menu
+        /// </summary>
+        /// <param name="evt"></param>
+        protected virtual void BuildViewContextualMenu(ContextualMenuPopulateEvent evt)
+        {
+            evt.menu.AppendAction("View/Processor", (e) => ToggleView<ProcessorView>(),
+                (e) => GetPinnedElementStatus<ProcessorView>());
+        }
 
-			// And re-add with new up to date datas
-			InitializeNodeViews();
-			InitializeEdgeViews();
-            InitializeGroups();
-			InitializeStickyNotes();
-			InitializeStackNodes();
+        /// <summary>
+        /// Add the Select Asset entry to the context menu
+        /// </summary>
+        /// <param name="evt"></param>
+        protected virtual void BuildSelectAssetContextualMenu(ContextualMenuPopulateEvent evt)
+        {
+            evt.menu.AppendAction("Select Asset", (e) => EditorGUIUtility.PingObject(graph),
+                DropdownMenuAction.AlwaysEnabled);
+        }
 
-			Reload();
+        /// <summary>
+        /// Add the Save Asset entry to the context menu
+        /// </summary>
+        /// <param name="evt"></param>
+        protected virtual void BuildSaveAssetContextualMenu(ContextualMenuPopulateEvent evt)
+        {
+            evt.menu.AppendAction("Save Asset", (e) =>
+            {
+                EditorUtility.SetDirty(graph);
+                AssetDatabase.SaveAssets();
+            }, DropdownMenuAction.AlwaysEnabled);
+        }
 
-			UpdateComputeOrder();
+        /// <summary>
+        /// Add the Help entry to the context menu
+        /// </summary>
+        /// <param name="evt"></param>
+        protected void BuildHelpContextualMenu(ContextualMenuPopulateEvent evt)
+        {
+            evt.menu.AppendAction("Help/Reset Pinned Windows", e =>
+            {
+                foreach (var kp in pinnedElements)
+                    kp.Value.ResetPosition();
+            });
+        }
 
-			// Restore selection after re-creating all views
-			// selection = nodeViews.Where(v => selectedNodeGUIDs.Contains(v.nodeTarget.GUID)).Select(v => v as ISelectable).ToList();
-			foreach (var guid in selectedNodeGUIDs)
+        protected virtual void KeyDownCallback(KeyDownEvent e)
+        {
+            if (e.keyCode == KeyCode.S && e.commandKey)
+            {
+                SaveGraphToDisk();
+                e.StopPropagation();
+            }
+            else if (nodeViews.Count > 0 && e.commandKey && e.altKey)
+            {
+                //	Node Aligning shortcuts
+                switch (e.keyCode)
+                {
+                    case KeyCode.LeftArrow:
+                        nodeViews[0].AlignToLeft();
+                        e.StopPropagation();
+                        break;
+                    case KeyCode.RightArrow:
+                        nodeViews[0].AlignToRight();
+                        e.StopPropagation();
+                        break;
+                    case KeyCode.UpArrow:
+                        nodeViews[0].AlignToTop();
+                        e.StopPropagation();
+                        break;
+                    case KeyCode.DownArrow:
+                        nodeViews[0].AlignToBottom();
+                        e.StopPropagation();
+                        break;
+                    case KeyCode.C:
+                        nodeViews[0].AlignToCenter();
+                        e.StopPropagation();
+                        break;
+                    case KeyCode.M:
+                        nodeViews[0].AlignToMiddle();
+                        e.StopPropagation();
+                        break;
+                }
+            }
+        }
+
+        private void MouseUpCallback(MouseUpEvent e)
+        {
+            schedule.Execute(() =>
+            {
+#if original
+                if (DoesSelectionContainsInspectorNodes())
+                    UpdateNodeInspectorSelection();
+#endif
+            }).ExecuteLater(1);
+        }
+
+        private void MouseDownCallback(MouseDownEvent e)
+        {
+            // When left clicking on the graph (not a node or something else)
+            if (e.button == 0)
+                // Close all settings windows:
+                nodeViews.ForEach(v => v.CloseSettings());
+
+
+#if original
+			if (DoesSelectionContainsInspectorNodes())
+				UpdateNodeInspectorSelection();
+#endif
+            if (selection.OfType<BaseNodeView>().Any())
+                UpdateNodeInspectorSelection();
+        }
+
+#if original
+        private bool DoesSelectionContainsInspectorNodes()
+        {
+
+			//var selectedNodeViews = selection.Where(s => s is BaseNodeView).ToList();
+			var selectedNodeViews = selection.OfType<BaseNodeView>().ToList();
+			//var selectedNodesNotInInspector = selectedNodeViews.Except(nodeInspector.selectedNodeViews).ToList();
+			var selectedNodesNotInInspector = selectedNodeViews
+				.Where(x => !nodeInspector.selectedNodes.Contains(x.nodeTarget)).ToList();
+			//var nodeInInspectorWithoutSelectedNodes = nodeInspector.selectedNodeViews.Except(selectedNodeViews).ToList();
+			var nodeInInspectorWithoutSelectedNodes = nodeInspector.selectedNodes.Where(x =>
 			{
-				AddToSelection(nodeViews.FirstOrDefault(n => n.nodeTarget.GUID == guid));
-			}
+				return x != null && !selectedNodeViews.Select(x=>x.nodeTarget).Contains(x);
+			}).ToList();
 
-			UpdateNodeInspectorSelection();
-		}
+			return selectedNodesNotInInspector.Any() || nodeInInspectorWithoutSelectedNodes.Any();
+        }
+#endif
 
-		public void Initialize(BaseGraph graph)
-		{
-			if (this.graph != null)
-			{
-				SaveGraphToDisk();
-				// Close pinned windows from old graph:
-				ClearGraphElements();
-				NodeProvider.UnloadGraph(graph);
-			}
+        void DragPerformedCallback(DragPerformEvent e)
+            {
+                var mousePos =
+                    (e.currentTarget as VisualElement).ChangeCoordinatesTo(contentViewContainer, e.localMousePosition);
+                var dragData = DragAndDrop.GetGenericData("DragSelection") as List<ISelectable>;
 
-			this.graph = graph;
+                // Drag and Drop for elements inside the graph
+                if (dragData != null)
+                {
+                    var exposedParameterFieldViews = dragData.OfType<ExposedParameterFieldView>();
+                    if (exposedParameterFieldViews.Any())
+                        foreach (var paramFieldView in exposedParameterFieldViews)
+                        {
+                            RegisterCompleteObjectUndo("Create Parameter Node");
+                            var paramNode = BaseNode.CreateFromType<ParameterNode>(mousePos);
+                            paramNode.parameterGUID = paramFieldView.parameter.guid;
+                            AddNode(paramNode);
+                        }
+                }
 
-			exposedParameterFactory = new ExposedParameterFieldFactory(graph);
+                // External objects drag and drop
+                if (DragAndDrop.objectReferences.Length > 0)
+                {
+                    RegisterCompleteObjectUndo("Create Node From Object(s)");
+                    foreach (var obj in DragAndDrop.objectReferences)
+                    {
+                        var objectType = obj.GetType();
 
-			UpdateSerializedProperties();
+                        foreach (var kp in nodeTypePerCreateAssetType)
+                            if (kp.Key.IsAssignableFrom(objectType))
+                                try
+                                {
+                                    var node = BaseNode.CreateFromType(kp.Value.nodeType, mousePos);
+                                    if ((bool) kp.Value.initalizeNodeFromObject.Invoke(node, new[] {obj}))
+                                    {
+                                        AddNode(node);
+                                        break;
+                                    }
+                                }
+                                catch (Exception exception)
+                                {
+                                    Debug.LogException(exception);
+                                }
+                    }
+                }
+            }
 
-            connectorListener = CreateEdgeConnectorListener();
+            void DragUpdatedCallback(DragUpdatedEvent e)
+            {
+                var dragData = DragAndDrop.GetGenericData("DragSelection") as List<ISelectable>;
+                var dragObjects = DragAndDrop.objectReferences;
+                var dragging = false;
 
-			// When pressing ctrl-s, we save the graph
-			EditorSceneManager.sceneSaved += _ => SaveGraphToDisk();
-			RegisterCallback<KeyDownEvent>(e => {
-				if (e.keyCode == KeyCode.S && e.actionKey)
-					SaveGraphToDisk();
-			});
+                if (dragData != null)
+                    // Handle drag from exposed parameter view
+                    if (dragData.OfType<ExposedParameterFieldView>().Any())
+                        dragging = true;
 
-			ClearGraphElements();
+                if (dragObjects.Length > 0)
+                    dragging = true;
 
-			InitializeGraphView();
-			InitializeNodeViews();
-			InitializeEdgeViews();
-			InitializeViews();
-            InitializeGroups();
-			InitializeStickyNotes();
-			InitializeStackNodes();
+                if (dragging)
+                    DragAndDrop.visualMode = DragAndDropVisualMode.Generic;
 
-			initialized?.Invoke();
-			UpdateComputeOrder();
+                UpdateNodeInspectorSelection();
+            }
 
-			InitializeView();
+            #endregion
 
-			NodeProvider.LoadGraph(graph);
+            #region Initialization
 
-			// Register the nodes that can be created from assets
-			foreach (var nodeInfo in NodeProvider.GetNodeMenuEntries(graph))
-			{
-				var interfaces = nodeInfo.type.GetInterfaces();
-                var exceptInheritedInterfaces = interfaces.Except(interfaces.SelectMany(t => t.GetInterfaces()));
-				foreach (var i in interfaces)
-				{
-					if (i.IsGenericType && i.GetGenericTypeDefinition() == typeof(ICreateNodeFrom<>))
-					{
-						var genericArgumentType = i.GetGenericArguments()[0];
-						var initializeFunction = nodeInfo.type.GetMethod(
-							nameof(ICreateNodeFrom<Object>.InitializeNodeFromObject),
-							BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance,
-							null, new Type[]{ genericArgumentType}, null
-						);
+            void ReloadView()
+            {
+                // Force the graph to reload his data (Undo have updated the serialized properties of the graph
+                // so the one that are not serialized need to be synchronized)
+                graph.Deserialize();
 
-						// We only add the type that implements the interface, not it's children
-						if (initializeFunction.DeclaringType == nodeInfo.type)
-							nodeTypePerCreateAssetType[genericArgumentType] = (nodeInfo.type, initializeFunction);
-					}
-				}
-			}
-		}
+                // Get selected nodes
+                var selectedNodeGUIDs = new List<string>();
+                foreach (var e in selection)
+                    if (e is BaseNodeView v && Contains(v))
+                        selectedNodeGUIDs.Add(v.nodeTarget.GUID);
 
-		public void ClearGraphElements()
-		{
-			RemoveGroups();
-			RemoveNodeViews();
-			RemoveEdges();
-			RemoveStackNodeViews();
-			RemovePinnedElementViews();
+                // Remove everything
+                RemoveNodeViews();
+                RemoveEdges();
+                RemoveGroups();
 #if UNITY_2020_1_OR_NEWER
-			RemoveStrickyNotes();
+                RemoveStrickyNotes();
 #endif
-		}
+                RemoveStackNodeViews();
 
-		void UpdateSerializedProperties()
-		{
-			serializedGraph = new SerializedObject(graph);
-		}
+                UpdateSerializedProperties();
 
-		/// <summary>
-		/// Allow you to create your own edge connector listener
-		/// </summary>
-		/// <returns></returns>
-		protected virtual BaseEdgeConnectorListener CreateEdgeConnectorListener()
-		 => new BaseEdgeConnectorListener(this);
+                // And re-add with new up to date datas
+                InitializeNodeViews();
+                InitializeEdgeViews();
+                InitializeGroups();
+                InitializeStickyNotes();
+                InitializeStackNodes();
 
-		void InitializeGraphView()
-		{
-			graph.onExposedParameterListChanged += OnExposedParameterListChanged;
-			graph.onExposedParameterModified += (s) => onExposedParameterModified?.Invoke(s);
-			graph.onGraphChanges += GraphChangesCallback;
-			viewTransform.position = graph.position;
-			viewTransform.scale = graph.scale;
-			nodeCreationRequest = (c) => SearchWindow.Open(new SearchWindowContext(c.screenMousePosition), createNodeMenu);
-		}
+                Reload();
 
-		void OnExposedParameterListChanged()
-		{
-			UpdateSerializedProperties();
-			onExposedParameterListChanged?.Invoke();
-		}
+                UpdateComputeOrder();
 
-		void InitializeNodeViews()
-		{
-			graph.nodes.RemoveAll(n => n == null);
+                // Restore selection after re-creating all views
+                // selection = nodeViews.Where(v => selectedNodeGUIDs.Contains(v.nodeTarget.GUID)).Select(v => v as ISelectable).ToList();
+                foreach (var guid in selectedNodeGUIDs)
+                    AddToSelection(nodeViews.FirstOrDefault(n => n.nodeTarget.GUID == guid));
 
-			foreach (var node in graph.nodes)
-			{
-				var v = AddNodeView(node);
-			}
-		}
+                UpdateNodeInspectorSelection();
+            }
 
-		void InitializeEdgeViews()
-		{
-			// Sanitize edges in case a node broke something while loading
-			graph.edges.RemoveAll(edge => edge == null || edge.inputNode == null || edge.outputNode == null);
+            public void Initialize(BaseGraph graph)
+            {
+                if (this.graph != null)
+                {
+                    SaveGraphToDisk();
+                    // Close pinned windows from old graph:
+                    ClearGraphElements();
+                    NodeProvider.UnloadGraph(graph);
+                }
 
-			foreach (var serializedEdge in graph.edges)
-			{
-				nodeViewsPerNode.TryGetValue(serializedEdge.inputNode, out var inputNodeView);
-				nodeViewsPerNode.TryGetValue(serializedEdge.outputNode, out var outputNodeView);
-				if (inputNodeView == null || outputNodeView == null)
-					continue;
+                this.graph = graph;
 
-				var edgeView = CreateEdgeView();
-				edgeView.userData = serializedEdge;
-				edgeView.input = inputNodeView.GetPortViewFromFieldName(serializedEdge.inputFieldName, serializedEdge.inputPortIdentifier);
-				edgeView.output = outputNodeView.GetPortViewFromFieldName(serializedEdge.outputFieldName, serializedEdge.outputPortIdentifier);
+                exposedParameterFactory = new ExposedParameterFieldFactory(graph);
+
+                UpdateSerializedProperties();
+
+                connectorListener = CreateEdgeConnectorListener();
+
+                // When pressing ctrl-s, we save the graph
+                EditorSceneManager.sceneSaved += _ => SaveGraphToDisk();
+                RegisterCallback<KeyDownEvent>(e =>
+                {
+                    if (e.keyCode == KeyCode.S && e.actionKey)
+                        SaveGraphToDisk();
+                });
+
+                ClearGraphElements();
+
+                InitializeGraphView();
+                InitializeNodeViews();
+                InitializeEdgeViews();
+                InitializeViews();
+                InitializeGroups();
+                InitializeStickyNotes();
+                InitializeStackNodes();
+
+                initialized?.Invoke();
+                UpdateComputeOrder();
+
+                InitializeView();
+
+                NodeProvider.LoadGraph(graph);
+
+                // Register the nodes that can be created from assets
+                foreach (var nodeInfo in NodeProvider.GetNodeMenuEntries(graph))
+                {
+                    var interfaces = nodeInfo.type.GetInterfaces();
+                    var exceptInheritedInterfaces = interfaces.Except(interfaces.SelectMany(t => t.GetInterfaces()));
+                    foreach (var i in interfaces)
+                        if (i.IsGenericType && i.GetGenericTypeDefinition() == typeof(ICreateNodeFrom<>))
+                        {
+                            var genericArgumentType = i.GetGenericArguments()[0];
+                            var initializeFunction = nodeInfo.type.GetMethod(
+                                nameof(ICreateNodeFrom<Object>.InitializeNodeFromObject),
+                                BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance,
+                                null, new Type[] {genericArgumentType}, null
+                            );
+
+                            // We only add the type that implements the interface, not it's children
+                            if (initializeFunction.DeclaringType == nodeInfo.type)
+                                nodeTypePerCreateAssetType[genericArgumentType] = (nodeInfo.type, initializeFunction);
+                        }
+                }
+            }
+
+            public void ClearGraphElements()
+            {
+                RemoveGroups();
+                RemoveNodeViews();
+                RemoveEdges();
+                RemoveStackNodeViews();
+                RemovePinnedElementViews();
+#if UNITY_2020_1_OR_NEWER
+                RemoveStrickyNotes();
+#endif
+            }
+
+            void UpdateSerializedProperties()
+            {
+                serializedGraph = new SerializedObject(graph);
+            }
+
+        /// <summary>
+        /// Allow you to create your own edge connector listener
+        /// </summary>
+        /// <returns></returns>
+        protected virtual BaseEdgeConnectorListener CreateEdgeConnectorListener()
+        {
+            return new BaseEdgeConnectorListener(this);
+        }
+
+        private void InitializeGraphView()
+        {
+            graph.onExposedParameterListChanged += OnExposedParameterListChanged;
+            graph.onExposedParameterModified += (s) => onExposedParameterModified?.Invoke(s);
+            graph.onGraphChanges += GraphChangesCallback;
+            viewTransform.position = graph.position;
+            viewTransform.scale = graph.scale;
+            nodeCreationRequest = (c) =>
+                SearchWindow.Open(new SearchWindowContext(c.screenMousePosition), createNodeMenu);
+        }
+
+        private void OnExposedParameterListChanged()
+        {
+            UpdateSerializedProperties();
+            onExposedParameterListChanged?.Invoke();
+        }
+
+        private void InitializeNodeViews()
+        {
+            graph.nodes.RemoveAll(n => n == null);
+
+            foreach (var node in graph.nodes)
+            {
+                var v = AddNodeView(node);
+            }
+        }
+
+        private void InitializeEdgeViews()
+        {
+            // Sanitize edges in case a node broke something while loading
+            graph.edges.RemoveAll(edge => edge == null || edge.inputNode == null || edge.outputNode == null);
+
+            foreach (var serializedEdge in graph.edges)
+            {
+                nodeViewsPerNode.TryGetValue(serializedEdge.inputNode, out var inputNodeView);
+                nodeViewsPerNode.TryGetValue(serializedEdge.outputNode, out var outputNodeView);
+                if (inputNodeView == null || outputNodeView == null)
+                    continue;
+
+                var edgeView = CreateEdgeView();
+                edgeView.userData = serializedEdge;
+                edgeView.input = inputNodeView.GetPortViewFromFieldName(serializedEdge.inputFieldName,
+                    serializedEdge.inputPortIdentifier);
+                edgeView.output = outputNodeView.GetPortViewFromFieldName(serializedEdge.outputFieldName,
+                    serializedEdge.outputPortIdentifier);
 
 
-				ConnectView(edgeView);
-			}
-		}
+                ConnectView(edgeView);
+            }
+        }
 
-		void InitializeViews()
-		{
-			foreach (var pinnedElement in graph.pinnedElements)
-			{
-				if (pinnedElement.opened)
-					OpenPinned(pinnedElement.editorType.type);
-			}
-		}
+        private void InitializeViews()
+        {
+            foreach (var pinnedElement in graph.pinnedElements)
+                if (pinnedElement.opened)
+                    OpenPinned(pinnedElement.editorType.type);
+        }
 
-        void InitializeGroups()
+        private void InitializeGroups()
         {
             foreach (var group in graph.groups)
                 AddGroupView(group);
         }
 
-		void InitializeStickyNotes()
-		{
+        private void InitializeStickyNotes()
+        {
 #if UNITY_2020_1_OR_NEWER
             foreach (var group in graph.stickyNotes)
                 AddStickyNoteView(group);
 #endif
-		}
+        }
 
-		void InitializeStackNodes()
-		{
-			foreach (var stackNode in graph.stackNodes)
-				AddStackNodeView(stackNode);
-		}
+        private void InitializeStackNodes()
+        {
+            foreach (var stackNode in graph.stackNodes)
+                AddStackNodeView(stackNode);
+        }
 
-		protected virtual void InitializeManipulators()
-		{
-			this.AddManipulator(new ContentDragger());
-			this.AddManipulator(new SelectionDragger());
-			this.AddManipulator(new RectangleSelector());
-		}
+        protected virtual void InitializeManipulators()
+        {
+            this.AddManipulator(new ContentDragger());
+            this.AddManipulator(new SelectionDragger());
+            this.AddManipulator(new RectangleSelector());
+        }
 
-		protected virtual void Reload() {}
+        protected virtual void Reload()
+        {
+        }
 
-		#endregion
+        #endregion
 
-		#region Graph content modification
+        #region Graph content modification
 
-		public void UpdateNodeInspectorSelection()
-		{
-			if (nodeInspector.previouslySelectedObject != Selection.activeObject)
-				nodeInspector.previouslySelectedObject = Selection.activeObject;
+        public void UpdateNodeInspectorSelection()
+        {
+#if original
+	//		if (nodeInspector.previouslySelectedObject != Selection.activeObject)
+	//			nodeInspector.previouslySelectedObject = Selection.activeObject;
+	//		HashSet<BaseNodeView> selectedNodeViews = new HashSet<BaseNodeView>();
 
-			HashSet<BaseNodeView> selectedNodeViews = new HashSet<BaseNodeView>();
 			nodeInspector.selectedNodes.Clear();
 			foreach (var e in selection)
 			{
 				if (e is BaseNodeView v && this.Contains(v) && v.nodeTarget.needsInspector)
-					selectedNodeViews.Add(v);
+
+					//selectedNodeViews.Add(v);
+
+					nodeInspector.selectedNodes.Add(v.nodeTarget);
 			}
 
-			nodeInspector.UpdateSelectedNodes(selectedNodeViews);
-			if (Selection.activeObject != nodeInspector && selectedNodeViews.Count > 0)
-				Selection.activeObject = nodeInspector;
-		}
 
-		public BaseNodeView AddNode(BaseNode node)
-		{
-			// This will initialize the node using the graph instance
-			graph.AddNode(node);
+//			nodeInspector.UpdateSelectedNodes(selectedNodeViews);
+//			if (Selection.activeObject != nodeInspector && selectedNodeViews.Count > 0)
+//				Selection.activeObject = nodeInspector;
 
-			UpdateSerializedProperties();
-
-			var view = AddNodeView(node);
-
-			// Call create after the node have been initialized
-			ExceptionToLog.Call(() => view.OnCreated());
-
-			UpdateComputeOrder();
-
-			return view;
-		}
-
-		public BaseNodeView AddNodeView(BaseNode node)
-		{
-			var viewType = NodeProvider.GetNodeViewTypeFromType(node.GetType());
-
-			if (viewType == null)
-				viewType = typeof(BaseNodeView);
-
-			var baseNodeView = Activator.CreateInstance(viewType) as BaseNodeView;
-			baseNodeView.Initialize(this, node);
-			AddElement(baseNodeView);
-
-			nodeViews.Add(baseNodeView);
-			nodeViewsPerNode[node] = baseNodeView;
-
-			return baseNodeView;
-		}
-
-		public void RemoveNode(BaseNode node)
-		{
-			var view = nodeViewsPerNode[node];
-			RemoveNodeView(view);
-			graph.RemoveNode(node);
-		}
-
-		public void RemoveNodeView(BaseNodeView nodeView)
-		{
-			RemoveElement(nodeView);
-			nodeViews.Remove(nodeView);
-			nodeViewsPerNode.Remove(nodeView.nodeTarget);
-		}
-
-		void RemoveNodeViews()
-		{
-			foreach (var nodeView in nodeViews)
-				RemoveElement(nodeView);
-			nodeViews.Clear();
-			nodeViewsPerNode.Clear();
-		}
-
-		void RemoveStackNodeViews()
-		{
-			foreach (var stackView in stackNodeViews)
-				RemoveElement(stackView);
-			stackNodeViews.Clear();
-		}
-
-		void RemovePinnedElementViews()
-		{
-			foreach (var pinnedView in pinnedElements.Values)
+			if (nodeInspector.selectedNodes.Count > 0)
 			{
-				if (Contains(pinnedView))
-					Remove(pinnedView);
+				Selection.activeObject = nodeInspector;
 			}
-			pinnedElements.Clear();
-		}
+#endif
+
+
+            nodeInspector.selectedNode = selection.OfType<BaseNodeView>().Select(x => x.nodeTarget).FirstOrDefault();
+            if (nodeInspector.selectedNode != null) Selection.activeObject = nodeInspector;
+        }
+
+        public BaseNodeView AddNode(BaseNode node)
+        {
+            // This will initialize the node using the graph instance
+            graph.AddNode(node);
+
+            UpdateSerializedProperties();
+
+            var view = AddNodeView(node);
+
+            // Call create after the node have been initialized
+            ExceptionToLog.Call(() => view.OnCreated());
+
+            UpdateComputeOrder();
+
+            return view;
+        }
+
+        public BaseNodeView AddNodeView(BaseNode node)
+        {
+            var viewType = NodeProvider.GetNodeViewTypeFromType(node.GetType());
+
+            if (viewType == null)
+                viewType = typeof(BaseNodeView);
+
+            var baseNodeView = Activator.CreateInstance(viewType) as BaseNodeView;
+            baseNodeView.Initialize(this, node);
+            AddElement(baseNodeView);
+
+            nodeViews.Add(baseNodeView);
+            nodeViewsPerNode[node] = baseNodeView;
+
+            return baseNodeView;
+        }
+
+        public void RemoveNode(BaseNode node)
+        {
+            var view = nodeViewsPerNode[node];
+            RemoveNodeView(view);
+            graph.RemoveNode(node);
+        }
+
+        public void RemoveNodeView(BaseNodeView nodeView)
+        {
+            RemoveElement(nodeView);
+            nodeViews.Remove(nodeView);
+            nodeViewsPerNode.Remove(nodeView.nodeTarget);
+        }
+
+        private void RemoveNodeViews()
+        {
+            foreach (var nodeView in nodeViews)
+                RemoveElement(nodeView);
+            nodeViews.Clear();
+            nodeViewsPerNode.Clear();
+        }
+
+        private void RemoveStackNodeViews()
+        {
+            foreach (var stackView in stackNodeViews)
+                RemoveElement(stackView);
+            stackNodeViews.Clear();
+        }
+
+        private void RemovePinnedElementViews()
+        {
+            foreach (var pinnedView in pinnedElements.Values)
+                if (Contains(pinnedView))
+                    Remove(pinnedView);
+            pinnedElements.Clear();
+        }
 
         public GroupView AddGroup(Group block)
         {
@@ -1010,42 +1044,43 @@ namespace GraphProcessor
             return AddGroupView(block);
         }
 
-		public GroupView AddGroupView(Group block)
-		{
-			var c = new GroupView();
+        public GroupView AddGroupView(Group block)
+        {
+            var c = new GroupView();
 
-			c.Initialize(this, block);
+            c.Initialize(this, block);
 
-			AddElement(c);
+            AddElement(c);
 
             groupViews.Add(c);
             return c;
-		}
+        }
 
-		public BaseStackNodeView AddStackNode(BaseStackNode stackNode)
-		{
-			graph.AddStackNode(stackNode);
-			return AddStackNodeView(stackNode);
-		}
+        public BaseStackNodeView AddStackNode(BaseStackNode stackNode)
+        {
+            graph.AddStackNode(stackNode);
+            return AddStackNodeView(stackNode);
+        }
 
-		public BaseStackNodeView AddStackNodeView(BaseStackNode stackNode)
-		{
-			var viewType = StackNodeViewProvider.GetStackNodeCustomViewType(stackNode.GetType()) ?? typeof(BaseStackNodeView);
-			var stackView = Activator.CreateInstance(viewType, stackNode) as BaseStackNodeView;
+        public BaseStackNodeView AddStackNodeView(BaseStackNode stackNode)
+        {
+            var viewType = StackNodeViewProvider.GetStackNodeCustomViewType(stackNode.GetType()) ??
+                           typeof(BaseStackNodeView);
+            var stackView = Activator.CreateInstance(viewType, stackNode) as BaseStackNodeView;
 
-			AddElement(stackView);
-			stackNodeViews.Add(stackView);
+            AddElement(stackView);
+            stackNodeViews.Add(stackView);
 
-			stackView.Initialize(this);
+            stackView.Initialize(this);
 
-			return stackView;
-		}
+            return stackView;
+        }
 
-		public void RemoveStackNodeView(BaseStackNodeView stackNodeView)
-		{
-			stackNodeViews.Remove(stackNodeView);
-			RemoveElement(stackNodeView);
-		}
+        public void RemoveStackNodeView(BaseStackNodeView stackNodeView)
+        {
+            stackNodeViews.Remove(stackNodeView);
+            RemoveElement(stackNodeView);
+        }
 
 #if UNITY_2020_1_OR_NEWER
         public StickyNoteView AddStickyNote(StickyNote note)
@@ -1054,36 +1089,35 @@ namespace GraphProcessor
             return AddStickyNoteView(note);
         }
 
-		public StickyNoteView AddStickyNoteView(StickyNote note)
-		{
-			var c = new StickyNoteView();
+        public StickyNoteView AddStickyNoteView(StickyNote note)
+        {
+            var c = new StickyNoteView();
 
-			c.Initialize(this, note);
+            c.Initialize(this, note);
 
-			AddElement(c);
+            AddElement(c);
 
             stickyNoteViews.Add(c);
             return c;
-		}
+        }
 
-		public void RemoveStickyNoteView(StickyNoteView view)
-		{
-			stickyNoteViews.Remove(view);
-			RemoveElement(view);
-		}
+        public void RemoveStickyNoteView(StickyNoteView view)
+        {
+            stickyNoteViews.Remove(view);
+            RemoveElement(view);
+        }
 
-		public void RemoveStrickyNotes()
-		{
-			foreach (var stickyNodeView in stickyNoteViews)
-				RemoveElement(stickyNodeView);
-			stickyNoteViews.Clear();
-		}
+        public void RemoveStrickyNotes()
+        {
+            foreach (var stickyNodeView in stickyNoteViews)
+                RemoveElement(stickyNodeView);
+            stickyNoteViews.Clear();
+        }
 #endif
 
         public void AddSelectionsToGroup(GroupView view)
         {
             foreach (var selectedNode in selection)
-            {
                 if (selectedNode is BaseNodeView)
                 {
                     if (groupViews.Exists(x => x.ContainsElement(selectedNode as BaseNodeView)))
@@ -1091,327 +1125,331 @@ namespace GraphProcessor
 
                     view.AddElement(selectedNode as BaseNodeView);
                 }
-            }
         }
 
-		public void RemoveGroups()
-		{
-			foreach (var groupView in groupViews)
-				RemoveElement(groupView);
-			groupViews.Clear();
-		}
+        public void RemoveGroups()
+        {
+            foreach (var groupView in groupViews)
+                RemoveElement(groupView);
+            groupViews.Clear();
+        }
 
-		public bool CanConnectEdge(EdgeView e, bool autoDisconnectInputs = true)
-		{
-			if (e.input == null || e.output == null)
-				return false;
+        public bool CanConnectEdge(EdgeView e, bool autoDisconnectInputs = true)
+        {
+            if (e.input == null || e.output == null)
+                return false;
 
-			var inputPortView = e.input as PortView;
-			var outputPortView = e.output as PortView;
-			var inputNodeView = inputPortView.node as BaseNodeView;
-			var outputNodeView = outputPortView.node as BaseNodeView;
+            var inputPortView = e.input as PortView;
+            var outputPortView = e.output as PortView;
+            var inputNodeView = inputPortView.node as BaseNodeView;
+            var outputNodeView = outputPortView.node as BaseNodeView;
 
-			if (inputNodeView == null || outputNodeView == null)
-			{
-				Debug.LogError("Connect aborted !");
-				return false;
-			}
+            if (inputNodeView == null || outputNodeView == null)
+            {
+                Debug.LogError("Connect aborted !");
+                return false;
+            }
 
-			return true;
-		}
+            return true;
+        }
 
-		public bool ConnectView(EdgeView e, bool autoDisconnectInputs = true)
-		{
-			if (!CanConnectEdge(e, autoDisconnectInputs))
-				return false;
-			
-			var inputPortView = e.input as PortView;
-			var outputPortView = e.output as PortView;
-			var inputNodeView = inputPortView.node as BaseNodeView;
-			var outputNodeView = outputPortView.node as BaseNodeView;
+        public bool ConnectView(EdgeView e, bool autoDisconnectInputs = true)
+        {
+            if (!CanConnectEdge(e, autoDisconnectInputs))
+                return false;
 
-			//If the input port does not support multi-connection, we remove them
-			if (autoDisconnectInputs && !(e.input as PortView).portData.acceptMultipleEdges)
-			{
-				foreach (var edge in edgeViews.Where(ev => ev.input == e.input).ToList())
-				{
-					// TODO: do not disconnect them if the connected port is the same than the old connected
-					DisconnectView(edge);
-				}
-			}
-			// same for the output port:
-			if (autoDisconnectInputs && !(e.output as PortView).portData.acceptMultipleEdges)
-			{
-				foreach (var edge in edgeViews.Where(ev => ev.output == e.output).ToList())
-				{
-					// TODO: do not disconnect them if the connected port is the same than the old connected
-					DisconnectView(edge);
-				}
-			}
+            var inputPortView = e.input as PortView;
+            var outputPortView = e.output as PortView;
+            var inputNodeView = inputPortView.node as BaseNodeView;
+            var outputNodeView = outputPortView.node as BaseNodeView;
 
-			AddElement(e);
+            //If the input port does not support multi-connection, we remove them
+            if (autoDisconnectInputs && !(e.input as PortView).portData.acceptMultipleEdges)
+                foreach (var edge in edgeViews.Where(ev => ev.input == e.input).ToList())
+                    // TODO: do not disconnect them if the connected port is the same than the old connected
+                    DisconnectView(edge);
+            // same for the output port:
+            if (autoDisconnectInputs && !(e.output as PortView).portData.acceptMultipleEdges)
+                foreach (var edge in edgeViews.Where(ev => ev.output == e.output).ToList())
+                    // TODO: do not disconnect them if the connected port is the same than the old connected
+                    DisconnectView(edge);
 
-			e.input.Connect(e);
-			e.output.Connect(e);
+            AddElement(e);
 
-			// If the input port have been removed by the custom port behavior
-			// we try to find if it's still here
-			if (e.input == null)
-				e.input = inputNodeView.GetPortViewFromFieldName(inputPortView.fieldName, inputPortView.portData.identifier);
-			if (e.output == null)
-				e.output = inputNodeView.GetPortViewFromFieldName(outputPortView.fieldName, outputPortView.portData.identifier);
+            e.input.Connect(e);
+            e.output.Connect(e);
 
-			edgeViews.Add(e);
+            // If the input port have been removed by the custom port behavior
+            // we try to find if it's still here
+            if (e.input == null)
+                e.input = inputNodeView.GetPortViewFromFieldName(inputPortView.fieldName,
+                    inputPortView.portData.identifier);
+            if (e.output == null)
+                e.output = inputNodeView.GetPortViewFromFieldName(outputPortView.fieldName,
+                    outputPortView.portData.identifier);
 
-			inputNodeView.RefreshPorts();
-			outputNodeView.RefreshPorts();
+            edgeViews.Add(e);
 
-			// In certain cases the edge color is wrong so we patch it
-			schedule.Execute(() => {
-				e.UpdateEdgeControl();
-			}).ExecuteLater(1);
+            inputNodeView.RefreshPorts();
+            outputNodeView.RefreshPorts();
 
-			e.isConnected = true;
+            // In certain cases the edge color is wrong so we patch it
+            schedule.Execute(() => { e.UpdateEdgeControl(); }).ExecuteLater(1);
 
-			return true;
-		}
+            e.isConnected = true;
 
-		public bool Connect(PortView inputPortView, PortView outputPortView, bool autoDisconnectInputs = true)
-		{
-			var inputPort = inputPortView.owner.nodeTarget.GetPort(inputPortView.fieldName, inputPortView.portData.identifier);
-			var outputPort = outputPortView.owner.nodeTarget.GetPort(outputPortView.fieldName, outputPortView.portData.identifier);
+            return true;
+        }
 
-			// Checks that the node we are connecting still exists
-			if (inputPortView.owner.parent == null || outputPortView.owner.parent == null)
-				return false;
+        public bool Connect(PortView inputPortView, PortView outputPortView, bool autoDisconnectInputs = true)
+        {
+            var inputPort =
+                inputPortView.owner.nodeTarget.GetPort(inputPortView.fieldName, inputPortView.portData.identifier);
+            var outputPort =
+                outputPortView.owner.nodeTarget.GetPort(outputPortView.fieldName, outputPortView.portData.identifier);
 
-			var newEdge = SerializableEdge.CreateNewEdge(graph, inputPort, outputPort);
+            // Checks that the node we are connecting still exists
+            if (inputPortView.owner.parent == null || outputPortView.owner.parent == null)
+                return false;
 
-			var edgeView = CreateEdgeView();
-			edgeView.userData = newEdge;
-			edgeView.input = inputPortView;
-			edgeView.output = outputPortView;
+            var newEdge = SerializableEdge.CreateNewEdge(graph, inputPort, outputPort);
+
+            var edgeView = CreateEdgeView();
+            edgeView.userData = newEdge;
+            edgeView.input = inputPortView;
+            edgeView.output = outputPortView;
 
 
-			return Connect(edgeView);
-		}
+            return Connect(edgeView);
+        }
 
-		public bool Connect(EdgeView e, bool autoDisconnectInputs = true)
-		{
-			if (!CanConnectEdge(e, autoDisconnectInputs))
-				return false;
+        public bool Connect(EdgeView e, bool autoDisconnectInputs = true)
+        {
+            if (!CanConnectEdge(e, autoDisconnectInputs))
+                return false;
 
-			var inputPortView = e.input as PortView;
-			var outputPortView = e.output as PortView;
-			var inputNodeView = inputPortView.node as BaseNodeView;
-			var outputNodeView = outputPortView.node as BaseNodeView;
-			var inputPort = inputNodeView.nodeTarget.GetPort(inputPortView.fieldName, inputPortView.portData.identifier);
-			var outputPort = outputNodeView.nodeTarget.GetPort(outputPortView.fieldName, outputPortView.portData.identifier);
+            var inputPortView = e.input as PortView;
+            var outputPortView = e.output as PortView;
+            var inputNodeView = inputPortView.node as BaseNodeView;
+            var outputNodeView = outputPortView.node as BaseNodeView;
+            var inputPort =
+                inputNodeView.nodeTarget.GetPort(inputPortView.fieldName, inputPortView.portData.identifier);
+            var outputPort =
+                outputNodeView.nodeTarget.GetPort(outputPortView.fieldName, outputPortView.portData.identifier);
 
-			e.userData = graph.Connect(inputPort, outputPort, autoDisconnectInputs);
+            e.userData = graph.Connect(inputPort, outputPort, autoDisconnectInputs);
 
-			ConnectView(e, autoDisconnectInputs);
+            ConnectView(e, autoDisconnectInputs);
 
-			UpdateComputeOrder();
+            UpdateComputeOrder();
 
-			return true;
-		}
+            return true;
+        }
 
-		public void DisconnectView(EdgeView e, bool refreshPorts = true)
-		{
-			if (e == null)
-				return ;
+        public void DisconnectView(EdgeView e, bool refreshPorts = true)
+        {
+            if (e == null)
+                return;
 
-			RemoveElement(e);
+            RemoveElement(e);
 
-			if (e?.input?.node is BaseNodeView inputNodeView)
-			{
-				e.input.Disconnect(e);
-				if (refreshPorts)
-					inputNodeView.RefreshPorts();
-			}
-			if (e?.output?.node is BaseNodeView outputNodeView)
-			{
-				e.output.Disconnect(e);
-				if (refreshPorts)
-					outputNodeView.RefreshPorts();
-			}
+            if (e?.input?.node is BaseNodeView inputNodeView)
+            {
+                e.input.Disconnect(e);
+                if (refreshPorts)
+                    inputNodeView.RefreshPorts();
+            }
 
-			edgeViews.Remove(e);
-		}
+            if (e?.output?.node is BaseNodeView outputNodeView)
+            {
+                e.output.Disconnect(e);
+                if (refreshPorts)
+                    outputNodeView.RefreshPorts();
+            }
 
-		public void Disconnect(EdgeView e, bool refreshPorts = true)
-		{
-			// Remove the serialized edge if there is one
-			if (e.userData is SerializableEdge serializableEdge)
-				graph.Disconnect(serializableEdge.GUID);
+            edgeViews.Remove(e);
+        }
 
-			DisconnectView(e, refreshPorts);
+        public void Disconnect(EdgeView e, bool refreshPorts = true)
+        {
+            // Remove the serialized edge if there is one
+            if (e.userData is SerializableEdge serializableEdge)
+                graph.Disconnect(serializableEdge.GUID);
 
-			UpdateComputeOrder();
-		}
+            DisconnectView(e, refreshPorts);
 
-		public void RemoveEdges()
-		{
-			foreach (var edge in edgeViews)
-				RemoveElement(edge);
-			edgeViews.Clear();
-		}
+            UpdateComputeOrder();
+        }
 
-		public void UpdateComputeOrder()
-		{
-			graph.UpdateComputeOrder();
+        public void RemoveEdges()
+        {
+            foreach (var edge in edgeViews)
+                RemoveElement(edge);
+            edgeViews.Clear();
+        }
 
-			computeOrderUpdated?.Invoke();
-		}
+        public void UpdateComputeOrder()
+        {
+            graph.UpdateComputeOrder();
 
-		public void RegisterCompleteObjectUndo(string name)
-		{
-			Undo.RegisterCompleteObjectUndo(graph, name);
-		}
+            computeOrderUpdated?.Invoke();
+        }
 
-		public void SaveGraphToDisk()
-		{
-			if (graph == null)
-				return ;
+        public void RegisterCompleteObjectUndo(string name)
+        {
+            Undo.RegisterCompleteObjectUndo(graph, name);
+        }
 
-			EditorUtility.SetDirty(graph);
-		}
+        public void SaveGraphToDisk()
+        {
+            if (graph == null)
+                return;
 
-		public void ToggleView< T >() where T : PinnedElementView
-		{
-			ToggleView(typeof(T));
-		}
+            EditorUtility.SetDirty(graph);
+        }
 
-		public void ToggleView(Type type)
-		{
-			PinnedElementView view;
-			pinnedElements.TryGetValue(type, out view);
+        public void ToggleView<T>() where T : PinnedElementView
+        {
+            ToggleView(typeof(T));
+        }
 
-			if (view == null)
-				OpenPinned(type);
-			else
-				ClosePinned(type, view);
-		}
+        public void ToggleView(Type type)
+        {
+            PinnedElementView view;
+            pinnedElements.TryGetValue(type, out view);
 
-		public void OpenPinned< T >() where T : PinnedElementView
-		{
-			OpenPinned(typeof(T));
-		}
+            if (view == null)
+                OpenPinned(type);
+            else
+                ClosePinned(type, view);
+        }
 
-		public void OpenPinned(Type type)
-		{
-			PinnedElementView view;
+        public void OpenPinned<T>() where T : PinnedElementView
+        {
+            OpenPinned(typeof(T));
+        }
 
-			if (type == null)
-				return ;
+        public void OpenPinned(Type type)
+        {
+            PinnedElementView view;
 
-			PinnedElement elem = graph.OpenPinned(type);
+            if (type == null)
+                return;
 
-			if (!pinnedElements.ContainsKey(type))
-			{
-				view = Activator.CreateInstance(type) as PinnedElementView;
-				if (view == null)
-					return ;
-				pinnedElements[type] = view;
-				view.InitializeGraphView(elem, this);
-			}
-			view = pinnedElements[type];
+            var elem = graph.OpenPinned(type);
 
-			if (!Contains(view))
-				Add(view);
-		}
+            if (!pinnedElements.ContainsKey(type))
+            {
+                view = Activator.CreateInstance(type) as PinnedElementView;
+                if (view == null)
+                    return;
+                pinnedElements[type] = view;
+                view.InitializeGraphView(elem, this);
+            }
 
-		public void ClosePinned< T >(PinnedElementView view) where T : PinnedElementView
-		{
-			ClosePinned(typeof(T), view);
-		}
+            view = pinnedElements[type];
 
-		public void ClosePinned(Type type, PinnedElementView elem)
-		{
-			pinnedElements.Remove(type);
-			Remove(elem);
-			graph.ClosePinned(type);
-		}
+            if (!Contains(view))
+                Add(view);
+        }
 
-		public Status GetPinnedElementStatus< T >() where T : PinnedElementView
-		{
-			return GetPinnedElementStatus(typeof(T));
-		}
+        public void ClosePinned<T>(PinnedElementView view) where T : PinnedElementView
+        {
+            ClosePinned(typeof(T), view);
+        }
 
-		public Status GetPinnedElementStatus(Type type)
-		{
-			var pinned = graph.pinnedElements.Find(p => p.editorType.type == type);
+        public void ClosePinned(Type type, PinnedElementView elem)
+        {
+            pinnedElements.Remove(type);
+            Remove(elem);
+            graph.ClosePinned(type);
+        }
 
-			if (pinned != null && pinned.opened)
-				return Status.Normal;
-			else
-				return Status.Hidden;
-		}
+        public Status GetPinnedElementStatus<T>() where T : PinnedElementView
+        {
+            return GetPinnedElementStatus(typeof(T));
+        }
 
-		public void ResetPositionAndZoom()
-		{
-			graph.position = Vector3.zero;
-			graph.scale = Vector3.one;
+        public Status GetPinnedElementStatus(Type type)
+        {
+            var pinned = graph.pinnedElements.Find(p => p.editorType.type == type);
 
-			UpdateViewTransform(graph.position, graph.scale);
-		}
+            if (pinned != null && pinned.opened)
+                return Status.Normal;
+            else
+                return Status.Hidden;
+        }
 
-		/// <summary>
-		/// Deletes the selected content, can be called form an IMGUI container
-		/// </summary>
-		public void DelayedDeleteSelection() => this.schedule.Execute(() => DeleteSelectionOperation("Delete", AskUser.DontAskUser)).ExecuteLater(0);
+        public void ResetPositionAndZoom()
+        {
+            graph.position = Vector3.zero;
+            graph.scale = Vector3.one;
 
-		protected virtual void InitializeView() {}
+            UpdateViewTransform(graph.position, graph.scale);
+        }
 
-		public virtual IEnumerable<(string path, Type type)> FilterCreateNodeMenuEntries()
-		{
-			// By default we don't filter anything
-			foreach (var nodeMenuItem in NodeProvider.GetNodeMenuEntries(graph))
-				yield return nodeMenuItem;
+        /// <summary>
+        /// Deletes the selected content, can be called form an IMGUI container
+        /// </summary>
+        public void DelayedDeleteSelection()
+        {
+            schedule.Execute(() => DeleteSelectionOperation("Delete", AskUser.DontAskUser)).ExecuteLater(0);
+        }
 
-			// TODO: add exposed properties to this list
-		}
+        protected virtual void InitializeView()
+        {
+        }
 
-		public RelayNodeView AddRelayNode(PortView inputPort, PortView outputPort, Vector2 position)
-		{
-			var relayNode = BaseNode.CreateFromType<RelayNode>(position);
-			var view = AddNode(relayNode) as RelayNodeView;
+        public virtual IEnumerable<(string path, Type type)> FilterCreateNodeMenuEntries()
+        {
+            // By default we don't filter anything
+            foreach (var nodeMenuItem in NodeProvider.GetNodeMenuEntries(graph))
+                yield return nodeMenuItem;
 
-			if (outputPort != null)
-				Connect(view.inputPortViews[0], outputPort);
-			if (inputPort != null)
-				Connect(inputPort, view.outputPortViews[0]);
+            // TODO: add exposed properties to this list
+        }
 
-			return view;
-		}
+        public RelayNodeView AddRelayNode(PortView inputPort, PortView outputPort, Vector2 position)
+        {
+            var relayNode = BaseNode.CreateFromType<RelayNode>(position);
+            var view = AddNode(relayNode) as RelayNodeView;
 
-		/// <summary>
-		/// Update all the serialized property bindings (in case a node was deleted / added, the property pathes needs to be updated)
-		/// </summary>
-		public void SyncSerializedPropertyPathes()
-		{
-			foreach (var nodeView in nodeViews)
-				nodeView.SyncSerializedPropertyPathes();
+            if (outputPort != null)
+                Connect(view.inputPortViews[0], outputPort);
+            if (inputPort != null)
+                Connect(inputPort, view.outputPortViews[0]);
+
+            return view;
+        }
+
+        /// <summary>
+        /// Update all the serialized property bindings (in case a node was deleted / added, the property pathes needs to be updated)
+        /// </summary>
+        public void SyncSerializedPropertyPathes()
+        {
+            foreach (var nodeView in nodeViews)
+                nodeView.SyncSerializedPropertyPathes();
+#if original
 			nodeInspector.RefreshNodes();
-		}
+#endif
+        }
 
-		/// <summary>
-		/// Call this function when you want to remove this view
-		/// </summary>
+        /// <summary>
+        /// Call this function when you want to remove this view
+        /// </summary>
         public void Dispose()
         {
-			ClearGraphElements();
-			RemoveFromHierarchy();
-			Undo.undoRedoPerformed -= ReloadView;
-			Object.DestroyImmediate(nodeInspector);
-			NodeProvider.UnloadGraph(graph);
-			exposedParameterFactory.Dispose();
-			exposedParameterFactory = null;
+            ClearGraphElements();
+            RemoveFromHierarchy();
+            Undo.undoRedoPerformed -= ReloadView;
+            Object.DestroyImmediate(nodeInspector);
+            NodeProvider.UnloadGraph(graph);
+            exposedParameterFactory.Dispose();
+            exposedParameterFactory = null;
 
-			graph.onExposedParameterListChanged -= OnExposedParameterListChanged;
-			graph.onExposedParameterModified += (s) => onExposedParameterModified?.Invoke(s);
-			graph.onGraphChanges -= GraphChangesCallback;
+            graph.onExposedParameterListChanged -= OnExposedParameterListChanged;
+            graph.onExposedParameterModified += (s) => onExposedParameterModified?.Invoke(s);
+            graph.onGraphChanges -= GraphChangesCallback;
         }
 
         #endregion

@@ -1,7 +1,10 @@
 {
     "name": "com.alelievr.NodeGraphProcessor.Editor",
+    "rootNamespace": "",
     "references": [
-        "GUID:ca937d03ee5dd4d699091438dc0f3ae6"
+        "GUID:ca937d03ee5dd4d699091438dc0f3ae6",
+        "GUID:7017cf83799d50242a4cf38dd4d9fdbf",
+        "GUID:23eed6c2401dca1419d1ebd180e58c5a"
     ],
     "includePlatforms": [
         "Editor"
@@ -12,5 +15,6 @@
     "precompiledReferences": [],
     "autoReferenced": true,
     "defineConstraints": [],
-    "versionDefines": []
+    "versionDefines": [],
+    "noEngineReferences": false
 }

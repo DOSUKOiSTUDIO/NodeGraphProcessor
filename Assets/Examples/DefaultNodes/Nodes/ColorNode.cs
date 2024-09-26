@@ -1,4 +1,5 @@
-﻿using System.Collections;
+﻿using System;
+using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using GraphProcessor;
@@ -12,3 +13,12 @@ public class ColorNode : BaseNode
 
 	public override string		name => "Color";
 }
+
+public interface IA{}
+public interface IB: IA{}
+
+[Serializable]
+public class A : IA{}
+
+[Serializable]
+public class B: IB{}

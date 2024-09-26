@@ -9,24 +9,29 @@ using System.Collections;
 using System.Linq;
 using UnityEditor.UIElements;
 using System.Text.RegularExpressions;
-
+using Sirenix.OdinInspector;
 using Status = UnityEngine.UIElements.DropdownMenuAction.Status;
 using NodeView = UnityEditor.Experimental.GraphView.Node;
 
 namespace GraphProcessor
 {
 	[NodeCustomEditor(typeof(BaseNode))]
+	[BoxGroup]
+	[HideReferenceObjectPicker]//これじゃねえ？
 	public class BaseNodeView : NodeView
 	{
 		public BaseNode							nodeTarget;
 
+		[HideInInspector]
 		public List< PortView >					inputPortViews = new List< PortView >();
+		[HideInInspector]
 		public List< PortView >					outputPortViews = new List< PortView >();
 
 		public BaseGraphView					owner { private set; get; }
 
 		protected Dictionary< string, List< PortView > > portsPerFieldName = new Dictionary< string, List< PortView > >();
 
+		[HideInInspector]
         public VisualElement 					controlsContainer;
 		protected VisualElement					debugContainer;
 		protected VisualElement					rightTitleContainer;
@@ -46,6 +51,7 @@ namespace GraphProcessor
 
 		protected virtual bool					hasSettings { get; set; }
 
+		[HideInInspector]
         public bool								initializing = false; //Used for applying SetPosition on locked node at init.
 
         readonly string							baseNodeStyle = "GraphProcessorStyles/BaseNodeView";
@@ -582,6 +588,29 @@ namespace GraphProcessor
 		public void AddMessageView(string message, Texture icon, Color color)
 			=> AddBadge(new NodeBadgeView(message, icon, color));
 
+		public void AddMessageView(string message, NodeMessageType messageType,out IconBadge badge)
+		{
+			badge = null;
+			switch (messageType)
+			{
+				case NodeMessageType.Warning:
+					badge = new NodeBadgeView(message, EditorGUIUtility.IconContent("Collab.Warning").image, Color.yellow);
+					break ;
+				case NodeMessageType.Error:	
+					badge = IconBadge.CreateError(message);
+					break ;
+				case NodeMessageType.Info:
+					badge = IconBadge.CreateComment(message);
+					break ;
+				default:
+				case NodeMessageType.None:
+					badge = new NodeBadgeView(message, null, Color.grey);
+					break ;
+			}
+			
+			AddBadge(badge);
+		}
+		
 		public void AddMessageView(string message, NodeMessageType messageType)
 		{
 			IconBadge	badge = null;
@@ -628,6 +657,8 @@ namespace GraphProcessor
 		public void RemoveMessageViewContains(string message) => RemoveBadge(b => b.badgeText.Contains(message));
 		
 		public void RemoveMessageView(string message) => RemoveBadge(b => b.badgeText == message);
+		
+		//public void RemoveBadge(IconBadge badge) => RemoveBadge(b => b.badgeText == message);
 
 		public void Highlight()
 		{
@@ -710,7 +741,7 @@ namespace GraphProcessor
 				}
 
 				// Hide the field if we want to display in in the inspector
-				var showInInspector = field.GetCustomAttribute<ShowInInspector>();
+				var showInInspector = field.GetCustomAttribute<ShowInGraphInspector>();
 				if (!serializeField && showInInspector != null && !showInInspector.showInNode && !fromInspector)
 				{
 					AddEmptyField(field, fromInspector);

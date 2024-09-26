@@ -5,15 +5,19 @@ using System;
 using System.Reflection;
 using Unity.Jobs;
 using System.Linq;
+using Sirenix.OdinInspector;
 
 namespace GraphProcessor
 {
 	public delegate IEnumerable< PortData > CustomPortBehaviorDelegate(List< SerializableEdge > edges);
 	public delegate IEnumerable< PortData > CustomPortTypeBehaviorDelegate(string fieldName, string displayName, object value);
-
+	
+	//[BoxGroup]これかも！！
+	[HideLabel]
 	[Serializable]
 	public abstract class BaseNode
 	{
+		[HideInInspector]
 		[SerializeField]
 		internal string nodeCustomName = null; // The name of the node in case it was renamed by a user
 
@@ -45,6 +49,7 @@ namespace GraphProcessor
         public virtual bool         isLocked => nodeLock; 
 
         //id
+        [HideInInspector]
         public string				GUID;
 
 		public int					computeOrder = -1;
@@ -70,18 +75,22 @@ namespace GraphProcessor
 		public readonly NodeOutputPortContainer	outputPorts;
 
 		//Node view datas
+		[HideInInspector]
 		public Rect					position;
 		/// <summary>
 		/// Is the node expanded
 		/// </summary>
+		[HideInInspector]
 		public bool					expanded;
 		/// <summary>
 		/// Is debug visible
 		/// </summary>
+		[HideInInspector]
 		public bool					debug;
 		/// <summary>
 		/// Node locked state
 		/// </summary>
+		[HideInInspector]
         public bool                 nodeLock;
 
         public delegate void		ProcessDelegate();
@@ -539,7 +548,7 @@ namespace GraphProcessor
 				var inputAttribute = field.GetCustomAttribute< InputAttribute >();
 				var outputAttribute = field.GetCustomAttribute< OutputAttribute >();
 				var tooltipAttribute = field.GetCustomAttribute< TooltipAttribute >();
-				var showInInspector = field.GetCustomAttribute< ShowInInspector >();
+				var showInInspector = field.GetCustomAttribute< ShowInGraphInspector >();
 				var vertical = field.GetCustomAttribute< VerticalAttribute >();
 				bool isMultiple = false;
 				bool input = false;
