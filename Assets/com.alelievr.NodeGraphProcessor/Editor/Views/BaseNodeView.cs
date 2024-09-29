@@ -7,9 +7,10 @@ using System.Reflection;
 using System;
 using System.Collections;
 using System.Linq;
+using Sirenix.OdinInspector;
 using UnityEditor.UIElements;
 using System.Text.RegularExpressions;
-using Sirenix.OdinInspector;
+
 using Status = UnityEngine.UIElements.DropdownMenuAction.Status;
 using NodeView = UnityEditor.Experimental.GraphView.Node;
 
@@ -20,6 +21,9 @@ namespace GraphProcessor
 	[HideReferenceObjectPicker]//これじゃねえ？
 	public class BaseNodeView : NodeView
 	{
+		//TODO 当前更新模式是只要此BaseNode数据发生变化，就全量更新其对应NodeView的所有数据，后续出现卡顿可以考虑去掉这个特性
+		//訳。he current update mode is that as long as the BaseNode data changes, all the data of its corresponding NodeView will be updated in full, and you can consider removing this feature if there is lag in the future.
+		[OnValueChanged(nameof(UpdateFieldValues), true)]
 		public BaseNode							nodeTarget;
 
 		[HideInInspector]
@@ -90,7 +94,8 @@ namespace GraphProcessor
 			node.onMessageAdded += AddMessageView;
 			node.onMessageRemoved += RemoveMessageView;
 			node.onPortsUpdated += a => schedule.Execute(_ => UpdatePortsForField(a)).ExecuteLater(0);
-
+			node.onCustomNameChanged += a => titleTextField.SetValueWithoutNotify(title);;
+			
             styleSheets.Add(Resources.Load<StyleSheet>(baseNodeStyle));
 
             if (!string.IsNullOrEmpty(node.layoutStyle))
@@ -140,6 +145,7 @@ namespace GraphProcessor
 
 			rightTitleContainer = new VisualElement{ name = "RightTitleContainer" };
 			titleContainer.Add(rightTitleContainer);
+			titleContainer.Insert(0, new VisualElement(){ name = "NodeIcon_Action" });
 
 			topPortContainer = new VisualElement { name = "TopPortContainer" };
 			this.Insert(0, topPortContainer);
@@ -741,7 +747,7 @@ namespace GraphProcessor
 				}
 
 				// Hide the field if we want to display in in the inspector
-				var showInInspector = field.GetCustomAttribute<ShowInGraphInspector>();
+				var showInInspector = field.GetCustomAttribute<ShowinGraphInspector>();
 				if (!serializeField && showInInspector != null && !showInInspector.showInNode && !fromInspector)
 				{
 					AddEmptyField(field, fromInspector);
@@ -877,6 +883,44 @@ namespace GraphProcessor
 		protected SerializedProperty FindSerializedProperty(string fieldName)
 		{
 			int i = owner.graph.nodes.FindIndex(n => n == nodeTarget);
+
+			while (true)
+			{
+				if (owner == null)
+				{
+					Debug.LogError("owner == null");
+					break;
+				}
+
+				if (owner.serializedGraph == null)
+				{
+					Debug.LogError("owner.serializedGraph == null");
+					break;
+				}
+				if (owner.serializedGraph.FindProperty("nodes") == null)
+				{
+					//kokoにくる
+					Debug.LogError("owner.serializedGraph.FindProperty(nodes) == null");
+					break;
+				}
+				
+				if (owner.serializedGraph.FindProperty("nodes").GetArrayElementAtIndex(i) == null)
+				{
+					Debug.LogError("owner.serializedGraph.FindProperty(\"nodes\").GetArrayElementAtIndex(i) == null");
+					break;
+				}
+
+				if (owner.serializedGraph.FindProperty("nodes").GetArrayElementAtIndex(i).FindPropertyRelative(fieldName) == null)
+				{
+					Debug.LogError(fieldName+"がみつからないってさ");
+					break;
+				}
+					
+				break;
+			}
+				
+				
+				
 			return owner.serializedGraph.FindProperty("nodes").GetArrayElementAtIndex(i).FindPropertyRelative(fieldName);
 		}
 
@@ -885,6 +929,7 @@ namespace GraphProcessor
 			if (field == null)
 				return null;
 
+			//これおりじなるVer
 			var element = new PropertyField(FindSerializedProperty(field.Name), showInputDrawer ? "" : label);
 			element.Bind(owner.serializedGraph);
 
@@ -901,7 +946,24 @@ namespace GraphProcessor
 				valueChangedCallback?.Invoke();
 				NotifyNodeChanged();
 			});
-
+	
+			//これOdinVer
+			  //var element = FieldFactory.CreateField(field.FieldType, field.GetValue(nodeTarget)
+			//	  , 
+			//	  (newValue) => 
+			//	  {
+			  //		owner.RegisterCompleteObjectUndo("Updated " + newValue);
+			  //		field.SetValue(nodeTarget, newValue);
+			  //		NotifyNodeChanged();
+			  //		valueChangedCallback?.Invoke();
+			  //		UpdateFieldVisibility(field.Name, newValue);
+			  //		// When you have the node inspector, it's possible to have multiple input fields pointing to the same
+			  //		// property. We need to update those manually otherwise they still have the old value in the inspector.
+			  //		UpdateOtherFieldValue(field, newValue); 
+			//	  }
+			//	  , showInputDrawer ? "" : label);
+			 //---------------
+			 
 			// Disallow picking scene objects when the graph is not linked to a scene
 			if (element != null && !owner.graph.IsLinkedToScene())
 			{
@@ -968,10 +1030,17 @@ namespace GraphProcessor
 
 			var label = field.GetCustomAttribute<SettingAttribute>().name;
 
+			//コレオリジナルGit。
 			var element = new PropertyField(FindSerializedProperty(field.Name));
 			element.Bind(owner.serializedGraph);
+			
+			//これodinVer
+			//var element = FieldFactory.CreateField(field.FieldType, field.GetValue(nodeTarget), (newValue) => {
+			//	owner.RegisterCompleteObjectUndo("Updated " + newValue);
+			//	field.SetValue(nodeTarget, newValue);
+			//}, label);
 
-			if (element != null)
+			if(element != null)
 			{
 				settingsContainer.Add(element);
 				element.name = field.Name;

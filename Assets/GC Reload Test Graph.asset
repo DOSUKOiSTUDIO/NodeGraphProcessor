@@ -14,224 +14,103 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   serializedNodes: []
   nodes:
-  - rid: 1837308777363144907
-  - rid: 1837308777363144936
-  - rid: 1837308777363144937
-  - rid: 1837308777363144938
-  - rid: 1837308777363144939
-  - rid: 1837308777363144940
-  - rid: 1837308777363144941
-  - rid: 1837308777363144942
-  - rid: 1837308777363144943
-  - rid: 1837308777363144944
-  - rid: 1837308777363144945
-  - rid: 1837308777363144946
-  - rid: 1837308777363144947
-  - rid: 1837308777363144948
-  - rid: 1837308777363144949
-  - rid: 1837308777363144950
-  - rid: 1837308777363144951
-  - rid: 1837308777363144952
-  - rid: 1837308777363144953
-  - rid: 1837308777363144954
-  - rid: 1837308777363144955
-  - rid: 1837308777363144956
-  - rid: 1837308777363144957
-  - rid: 1837308777363144958
-  - rid: 1837308777363144959
-  edges:
-  - GUID: 7e00ac6a-d76d-4abf-b16b-e75786520510
-    owner: {fileID: 11400000}
-    inputNodeGUID: 4ff343aa-9fd2-4685-b7be-9c9a830d4076
-    outputNodeGUID: 0ee2fd12-e2bc-4223-8465-521094e1b1df
-    inputFieldName: executed
-    outputFieldName: executes
-    inputPortIdentifier: 
-    outputPortIdentifier: 
-  - GUID: fec11eba-d9b0-4f6f-a8ea-c57e2d12c8e6
-    owner: {fileID: 11400000}
-    inputNodeGUID: dc4dcbad-b9be-4b38-aa0d-fa924c3a3f41
-    outputNodeGUID: 4ff343aa-9fd2-4685-b7be-9c9a830d4076
-    inputFieldName: executed
-    outputFieldName: true
-    inputPortIdentifier: 
-    outputPortIdentifier: 
-  - GUID: db60b56b-5d55-4901-bdbd-e92e61d312ed
-    owner: {fileID: 11400000}
-    inputNodeGUID: 496fb327-40eb-49cb-9788-8195a3be1392
-    outputNodeGUID: 4ff343aa-9fd2-4685-b7be-9c9a830d4076
-    inputFieldName: executed
-    outputFieldName: true
-    inputPortIdentifier: 
-    outputPortIdentifier: 
-  - GUID: da2dd555-020f-4201-90fa-b92b8655c950
-    owner: {fileID: 11400000}
-    inputNodeGUID: c618c8bb-4e47-4334-b799-07e41d72e826
-    outputNodeGUID: 4ff343aa-9fd2-4685-b7be-9c9a830d4076
-    inputFieldName: executed
-    outputFieldName: true
-    inputPortIdentifier: 
-    outputPortIdentifier: 
-  - GUID: e625314a-a266-4d55-8897-fbfff6db848e
-    owner: {fileID: 11400000}
-    inputNodeGUID: 3e55e7ca-59a8-4908-9048-d7c9fb78e23f
-    outputNodeGUID: 4ff343aa-9fd2-4685-b7be-9c9a830d4076
-    inputFieldName: executed
-    outputFieldName: true
-    inputPortIdentifier: 
-    outputPortIdentifier: 
-  - GUID: 16cf409b-180c-4b62-a6ae-e437810ad2c5
-    owner: {fileID: 11400000}
-    inputNodeGUID: a9248ecc-2a6a-4cf6-9ad8-c82af9dcc14a
-    outputNodeGUID: 4ff343aa-9fd2-4685-b7be-9c9a830d4076
-    inputFieldName: executed
-    outputFieldName: true
-    inputPortIdentifier: 
-    outputPortIdentifier: 
-  - GUID: 67b843cf-dc83-439c-8028-e85816288467
-    owner: {fileID: 11400000}
-    inputNodeGUID: 5282ae0e-51e7-4852-87db-dcdb4d06f959
-    outputNodeGUID: 4ff343aa-9fd2-4685-b7be-9c9a830d4076
-    inputFieldName: executed
-    outputFieldName: true
-    inputPortIdentifier: 
-    outputPortIdentifier: 
-  - GUID: e4123fd3-b489-4305-a529-cbbee110d580
-    owner: {fileID: 11400000}
-    inputNodeGUID: 1fbdcf8b-dc1c-4eb9-8972-7f339daaefc5
-    outputNodeGUID: 4ff343aa-9fd2-4685-b7be-9c9a830d4076
-    inputFieldName: executed
-    outputFieldName: true
-    inputPortIdentifier: 
-    outputPortIdentifier: 
-  - GUID: 62a08ed7-b4dd-44aa-a8d1-1ed69e5710ad
-    owner: {fileID: 11400000}
-    inputNodeGUID: a2b19df2-10bc-442b-b192-4cb579a8f83e
-    outputNodeGUID: 4ff343aa-9fd2-4685-b7be-9c9a830d4076
-    inputFieldName: executed
-    outputFieldName: true
-    inputPortIdentifier: 
-    outputPortIdentifier: 
-  - GUID: 21a4da0e-29f0-4b66-98c2-eafc0963d755
-    owner: {fileID: 11400000}
-    inputNodeGUID: fbbb32a1-e8c6-4784-b76b-3c7776fd32ce
-    outputNodeGUID: 4ff343aa-9fd2-4685-b7be-9c9a830d4076
-    inputFieldName: executed
-    outputFieldName: true
-    inputPortIdentifier: 
-    outputPortIdentifier: 
-  - GUID: d9e79693-fd24-4dbf-86a4-14ed50ca56b6
-    owner: {fileID: 11400000}
-    inputNodeGUID: 0626cf12-a3f5-4589-b31f-9e5ac413ee47
-    outputNodeGUID: 4ff343aa-9fd2-4685-b7be-9c9a830d4076
-    inputFieldName: executed
-    outputFieldName: true
-    inputPortIdentifier: 
-    outputPortIdentifier: 
-  - GUID: 8e8babc8-2f43-4b59-a09d-ecd14d3efcb7
-    owner: {fileID: 11400000}
-    inputNodeGUID: 419d6f6a-1cc4-4f91-bb47-b2ea951ed526
-    outputNodeGUID: 4ff343aa-9fd2-4685-b7be-9c9a830d4076
-    inputFieldName: executed
-    outputFieldName: true
-    inputPortIdentifier: 
-    outputPortIdentifier: 
-  - GUID: a0ab9d84-42d9-40e0-99bd-c2a5b35cf060
-    owner: {fileID: 11400000}
-    inputNodeGUID: 476b70e1-5ad5-4a75-a6c9-4a16f112b8f8
-    outputNodeGUID: 4ff343aa-9fd2-4685-b7be-9c9a830d4076
-    inputFieldName: executed
-    outputFieldName: true
-    inputPortIdentifier: 
-    outputPortIdentifier: 
-  - GUID: 7998e6ef-3c72-42a3-9ef9-6300745d64e8
-    owner: {fileID: 11400000}
-    inputNodeGUID: 68ca7731-6d85-4fd6-ade1-444c496eb799
-    outputNodeGUID: 4ff343aa-9fd2-4685-b7be-9c9a830d4076
-    inputFieldName: executed
-    outputFieldName: true
-    inputPortIdentifier: 
-    outputPortIdentifier: 
-  - GUID: 13002b5b-67a6-465f-9f5f-5a9eff51c879
-    owner: {fileID: 11400000}
-    inputNodeGUID: 20ba6269-7b88-4d1a-a8bd-261e8fcb0c3b
-    outputNodeGUID: 4ff343aa-9fd2-4685-b7be-9c9a830d4076
-    inputFieldName: executed
-    outputFieldName: true
-    inputPortIdentifier: 
-    outputPortIdentifier: 
-  - GUID: 4130b514-ece7-4286-8fdf-06d39c225cf7
-    owner: {fileID: 11400000}
-    inputNodeGUID: df3f5c4f-3dc9-4118-8544-69e8fc8d8a24
-    outputNodeGUID: 4ff343aa-9fd2-4685-b7be-9c9a830d4076
-    inputFieldName: executed
-    outputFieldName: true
-    inputPortIdentifier: 
-    outputPortIdentifier: 
-  - GUID: 633f5896-efc7-4c7b-9250-887c2212577e
-    owner: {fileID: 11400000}
-    inputNodeGUID: eb28a445-0402-48ac-8351-943026135fe5
-    outputNodeGUID: 4ff343aa-9fd2-4685-b7be-9c9a830d4076
-    inputFieldName: executed
-    outputFieldName: true
-    inputPortIdentifier: 
-    outputPortIdentifier: 
-  - GUID: 40e33b06-f194-424a-9be4-c7a46e3cdbe4
-    owner: {fileID: 11400000}
-    inputNodeGUID: ca96cd14-ceb2-4677-9dbb-ac1e256a8596
-    outputNodeGUID: 4ff343aa-9fd2-4685-b7be-9c9a830d4076
-    inputFieldName: executed
-    outputFieldName: true
-    inputPortIdentifier: 
-    outputPortIdentifier: 
-  - GUID: 9c08e9fd-0f07-4035-9c54-ba436f32234f
-    owner: {fileID: 11400000}
-    inputNodeGUID: 6e5b9c97-5c0b-4471-aa40-23093ba8926e
-    outputNodeGUID: 4ff343aa-9fd2-4685-b7be-9c9a830d4076
-    inputFieldName: executed
-    outputFieldName: true
-    inputPortIdentifier: 
-    outputPortIdentifier: 
-  - GUID: 4a48f7e1-5a78-428c-aca1-41f01632cdf4
-    owner: {fileID: 11400000}
-    inputNodeGUID: 6f08b4e7-f9ee-472b-aebd-70cebea276cc
-    outputNodeGUID: 4ff343aa-9fd2-4685-b7be-9c9a830d4076
-    inputFieldName: executed
-    outputFieldName: true
-    inputPortIdentifier: 
-    outputPortIdentifier: 
-  - GUID: d9eb5aad-959e-4902-9c01-a485afdaae71
-    owner: {fileID: 11400000}
-    inputNodeGUID: 7f530596-6ca8-4964-bc8f-d64cc6906b0f
-    outputNodeGUID: 4ff343aa-9fd2-4685-b7be-9c9a830d4076
-    inputFieldName: executed
-    outputFieldName: true
-    inputPortIdentifier: 
-    outputPortIdentifier: 
-  - GUID: 016f0e9c-ad4a-4e34-86dc-8325b274f4b6
-    owner: {fileID: 11400000}
-    inputNodeGUID: f3ed1055-d1f3-4db6-b95e-ec5fb8ce67c1
-    outputNodeGUID: 4ff343aa-9fd2-4685-b7be-9c9a830d4076
-    inputFieldName: executed
-    outputFieldName: true
-    inputPortIdentifier: 
-    outputPortIdentifier: 
-  - GUID: f3e47a89-4ce4-44c3-8404-3b59cfa2aaed
-    owner: {fileID: 11400000}
-    inputNodeGUID: c207cda4-840d-4a7e-a754-d2572d8ac91a
-    outputNodeGUID: 4ff343aa-9fd2-4685-b7be-9c9a830d4076
-    inputFieldName: executed
-    outputFieldName: true
-    inputPortIdentifier: 
-    outputPortIdentifier: 
-  - GUID: ab36b6bf-c638-4893-87d7-92b0a1b20baa
-    owner: {fileID: 11400000}
-    inputNodeGUID: 1a614c1a-a233-49dc-956a-875ec64a3dd3
-    outputNodeGUID: 4ff343aa-9fd2-4685-b7be-9c9a830d4076
-    inputFieldName: executed
-    outputFieldName: true
-    inputPortIdentifier: 
-    outputPortIdentifier: 
+  - nodeCustomName: 
+    GUID: bf40b722-5cdd-4ff2-8a13-366c1757e550
+    computeOrder: 0
+    position:
+      serializedVersion: 2
+      x: 1410.7357
+      y: -104.347824
+      width: 101
+      height: 42
+    expanded: 0
+    debug: 0
+    nodeLock: 0
+  - nodeCustomName: 
+    GUID: 9f98ed19-c420-4711-8d2d-e6562622529b
+    computeOrder: 1
+    position:
+      serializedVersion: 2
+      x: 1272.5898
+      y: -34.02647
+      width: 100
+      height: 100
+    expanded: 0
+    debug: 0
+    nodeLock: 0
+  - nodeCustomName: 
+    GUID: 0d1ae15d-a251-4cc8-9a79-75efbdc89dc0
+    computeOrder: 2
+    position:
+      serializedVersion: 2
+      x: 1428.3555
+      y: -31.758038
+      width: 100
+      height: 100
+    expanded: 0
+    debug: 0
+    nodeLock: 0
+  - nodeCustomName: 
+    GUID: 523ab9ff-bd7a-40f2-95e9-abddaae3aa02
+    computeOrder: 3
+    position:
+      serializedVersion: 2
+      x: 1568.8773
+      y: -76.50001
+      width: 122
+      height: 89
+    expanded: 0
+    debug: 0
+    nodeLock: 0
+  - nodeCustomName: 
+    GUID: 63b6777f-ca10-49f0-9986-4d4cf3775319
+    computeOrder: 4
+    position:
+      serializedVersion: 2
+      x: 1381.4746
+      y: 79.39509
+      width: 100
+      height: 100
+    expanded: 1
+    debug: 0
+    nodeLock: 0
+  - nodeCustomName: 
+    GUID: 80622c92-1ae0-46c7-afc8-581726ac0e30
+    computeOrder: 5
+    position:
+      serializedVersion: 2
+      x: 1342.9113
+      y: 26.465033
+      width: 100
+      height: 100
+    expanded: 1
+    debug: 0
+    nodeLock: 0
+  - nodeCustomName: 
+    GUID: cebddd6f-2fe4-45f5-a698-93a10d0f318a
+    computeOrder: 6
+    position:
+      serializedVersion: 2
+      x: 1498.6769
+      y: 58.97921
+      width: 100
+      height: 100
+    expanded: 0
+    debug: 0
+    nodeLock: 0
+  - nodeCustomName: 
+    GUID: 2b54757e-e003-47fe-ae86-a36af06ed288
+    computeOrder: 7
+    position:
+      serializedVersion: 2
+      x: 1550.1072
+      y: 5.0000076
+      width: 111
+      height: 42
+    expanded: 0
+    debug: 0
+    nodeLock: 0
+  edges: []
   groups: []
   stackNodes: []
   pinnedElements:
@@ -268,432 +147,8 @@ MonoBehaviour:
   exposedParameters: []
   serializedParameterList: []
   stickyNotes: []
-  nodeInspectorReference: {fileID: 0}
-  position: {x: -2211, y: 677, z: 0}
-  scale: {x: 2, y: 2, z: 1}
+  position: {x: -608, y: 211, z: 0}
+  scale: {x: 0.7561437, y: 0.7561437, z: 1}
   references:
     version: 2
-    RefIds:
-    - rid: 1837308777363144907
-      type: {class: IfNode, ns: , asm: NewAssembly}
-      data:
-        nodeCustomName: 
-        GUID: 4ff343aa-9fd2-4685-b7be-9c9a830d4076
-        computeOrder: 1
-        position:
-          serializedVersion: 2
-          x: 1359.5
-          y: -232
-          width: 152
-          height: 113
-        expanded: 0
-        debug: 0
-        nodeLock: 0
-        condition: 0
-        compareOperator: 0
-    - rid: 1837308777363144936
-      type: {class: StartNode, ns: NodeGraphProcessor.Examples, asm: NewAssembly}
-      data:
-        nodeCustomName: 
-        GUID: 0ee2fd12-e2bc-4223-8465-521094e1b1df
-        computeOrder: 0
-        position:
-          serializedVersion: 2
-          x: 1222.5553
-          y: -260.6019
-          width: 100
-          height: 100
-        expanded: 0
-        debug: 0
-        nodeLock: 0
-    - rid: 1837308777363144937
-      type: {class: IfNode, ns: , asm: NewAssembly}
-      data:
-        nodeCustomName: 
-        GUID: dc4dcbad-b9be-4b38-aa0d-fa924c3a3f41
-        computeOrder: 2
-        position:
-          serializedVersion: 2
-          x: 1536
-          y: -163
-          width: 100
-          height: 100
-        expanded: 0
-        debug: 0
-        nodeLock: 0
-        condition: 0
-        compareOperator: 0
-    - rid: 1837308777363144938
-      type: {class: IfNode, ns: , asm: NewAssembly}
-      data:
-        nodeCustomName: 
-        GUID: 496fb327-40eb-49cb-9788-8195a3be1392
-        computeOrder: 3
-        position:
-          serializedVersion: 2
-          x: 1514
-          y: 14
-          width: 152
-          height: 113
-        expanded: 0
-        debug: 0
-        nodeLock: 0
-        condition: 0
-        compareOperator: 0
-    - rid: 1837308777363144939
-      type: {class: IfNode, ns: , asm: NewAssembly}
-      data:
-        nodeCustomName: 
-        GUID: c618c8bb-4e47-4334-b799-07e41d72e826
-        computeOrder: 4
-        position:
-          serializedVersion: 2
-          x: 1514
-          y: 14
-          width: 152
-          height: 113
-        expanded: 0
-        debug: 0
-        nodeLock: 0
-        condition: 0
-        compareOperator: 0
-    - rid: 1837308777363144940
-      type: {class: IfNode, ns: , asm: NewAssembly}
-      data:
-        nodeCustomName: 
-        GUID: 3e55e7ca-59a8-4908-9048-d7c9fb78e23f
-        computeOrder: 5
-        position:
-          serializedVersion: 2
-          x: 1514
-          y: 14
-          width: 152
-          height: 113
-        expanded: 0
-        debug: 0
-        nodeLock: 0
-        condition: 0
-        compareOperator: 0
-    - rid: 1837308777363144941
-      type: {class: IfNode, ns: , asm: NewAssembly}
-      data:
-        nodeCustomName: 
-        GUID: a9248ecc-2a6a-4cf6-9ad8-c82af9dcc14a
-        computeOrder: 6
-        position:
-          serializedVersion: 2
-          x: 1407.5
-          y: -42.5
-          width: 152
-          height: 113
-        expanded: 0
-        debug: 0
-        nodeLock: 0
-        condition: 0
-        compareOperator: 0
-    - rid: 1837308777363144942
-      type: {class: IfNode, ns: , asm: NewAssembly}
-      data:
-        nodeCustomName: 
-        GUID: 5282ae0e-51e7-4852-87db-dcdb4d06f959
-        computeOrder: 7
-        position:
-          serializedVersion: 2
-          x: 1624
-          y: -174
-          width: 152
-          height: 113
-        expanded: 0
-        debug: 0
-        nodeLock: 0
-        condition: 0
-        compareOperator: 0
-    - rid: 1837308777363144943
-      type: {class: IfNode, ns: , asm: NewAssembly}
-      data:
-        nodeCustomName: 
-        GUID: 1fbdcf8b-dc1c-4eb9-8972-7f339daaefc5
-        computeOrder: 8
-        position:
-          serializedVersion: 2
-          x: 1548
-          y: -276
-          width: 152
-          height: 113
-        expanded: 0
-        debug: 0
-        nodeLock: 0
-        condition: 0
-        compareOperator: 0
-    - rid: 1837308777363144944
-      type: {class: IfNode, ns: , asm: NewAssembly}
-      data:
-        nodeCustomName: 
-        GUID: a2b19df2-10bc-442b-b192-4cb579a8f83e
-        computeOrder: 9
-        position:
-          serializedVersion: 2
-          x: 1548
-          y: -276
-          width: 152
-          height: 113
-        expanded: 0
-        debug: 0
-        nodeLock: 0
-        condition: 0
-        compareOperator: 0
-    - rid: 1837308777363144945
-      type: {class: IfNode, ns: , asm: NewAssembly}
-      data:
-        nodeCustomName: 
-        GUID: fbbb32a1-e8c6-4784-b76b-3c7776fd32ce
-        computeOrder: 10
-        position:
-          serializedVersion: 2
-          x: 1548
-          y: -276
-          width: 152
-          height: 113
-        expanded: 0
-        debug: 0
-        nodeLock: 0
-        condition: 0
-        compareOperator: 0
-    - rid: 1837308777363144946
-      type: {class: IfNode, ns: , asm: NewAssembly}
-      data:
-        nodeCustomName: 
-        GUID: 0626cf12-a3f5-4589-b31f-9e5ac413ee47
-        computeOrder: 11
-        position:
-          serializedVersion: 2
-          x: 1548
-          y: -276
-          width: 152
-          height: 113
-        expanded: 0
-        debug: 0
-        nodeLock: 0
-        condition: 0
-        compareOperator: 0
-    - rid: 1837308777363144947
-      type: {class: IfNode, ns: , asm: NewAssembly}
-      data:
-        nodeCustomName: 
-        GUID: 419d6f6a-1cc4-4f91-bb47-b2ea951ed526
-        computeOrder: 12
-        position:
-          serializedVersion: 2
-          x: 1548
-          y: -276
-          width: 152
-          height: 113
-        expanded: 0
-        debug: 0
-        nodeLock: 0
-        condition: 0
-        compareOperator: 0
-    - rid: 1837308777363144948
-      type: {class: IfNode, ns: , asm: NewAssembly}
-      data:
-        nodeCustomName: 
-        GUID: 476b70e1-5ad5-4a75-a6c9-4a16f112b8f8
-        computeOrder: 13
-        position:
-          serializedVersion: 2
-          x: 1556
-          y: -143
-          width: 100
-          height: 100
-        expanded: 0
-        debug: 0
-        nodeLock: 0
-        condition: 0
-        compareOperator: 0
-    - rid: 1837308777363144949
-      type: {class: IfNode, ns: , asm: NewAssembly}
-      data:
-        nodeCustomName: 
-        GUID: 68ca7731-6d85-4fd6-ade1-444c496eb799
-        computeOrder: 14
-        position:
-          serializedVersion: 2
-          x: 1467.5
-          y: -86.5
-          width: 152
-          height: 113
-        expanded: 0
-        debug: 0
-        nodeLock: 0
-        condition: 0
-        compareOperator: 0
-    - rid: 1837308777363144950
-      type: {class: IfNode, ns: , asm: NewAssembly}
-      data:
-        nodeCustomName: 
-        GUID: 20ba6269-7b88-4d1a-a8bd-261e8fcb0c3b
-        computeOrder: 15
-        position:
-          serializedVersion: 2
-          x: 1907
-          y: -210.5
-          width: 152
-          height: 113
-        expanded: 0
-        debug: 0
-        nodeLock: 0
-        condition: 0
-        compareOperator: 0
-    - rid: 1837308777363144951
-      type: {class: IfNode, ns: , asm: NewAssembly}
-      data:
-        nodeCustomName: 
-        GUID: df3f5c4f-3dc9-4118-8544-69e8fc8d8a24
-        computeOrder: 16
-        position:
-          serializedVersion: 2
-          x: 1775
-          y: -324.5
-          width: 152
-          height: 113
-        expanded: 0
-        debug: 0
-        nodeLock: 0
-        condition: 0
-        compareOperator: 0
-    - rid: 1837308777363144952
-      type: {class: IfNode, ns: , asm: NewAssembly}
-      data:
-        nodeCustomName: 
-        GUID: eb28a445-0402-48ac-8351-943026135fe5
-        computeOrder: 17
-        position:
-          serializedVersion: 2
-          x: 1775
-          y: -324.5
-          width: 152
-          height: 113
-        expanded: 0
-        debug: 0
-        nodeLock: 0
-        condition: 0
-        compareOperator: 0
-    - rid: 1837308777363144953
-      type: {class: IfNode, ns: , asm: NewAssembly}
-      data:
-        nodeCustomName: 
-        GUID: ca96cd14-ceb2-4677-9dbb-ac1e256a8596
-        computeOrder: 18
-        position:
-          serializedVersion: 2
-          x: 1665
-          y: -161.5
-          width: 152
-          height: 113
-        expanded: 0
-        debug: 0
-        nodeLock: 0
-        condition: 0
-        compareOperator: 0
-    - rid: 1837308777363144954
-      type: {class: IfNode, ns: , asm: NewAssembly}
-      data:
-        nodeCustomName: 
-        GUID: 6e5b9c97-5c0b-4471-aa40-23093ba8926e
-        computeOrder: 19
-        position:
-          serializedVersion: 2
-          x: 1665
-          y: -161.5
-          width: 152
-          height: 113
-        expanded: 0
-        debug: 0
-        nodeLock: 0
-        condition: 0
-        compareOperator: 0
-    - rid: 1837308777363144955
-      type: {class: IfNode, ns: , asm: NewAssembly}
-      data:
-        nodeCustomName: 
-        GUID: 6f08b4e7-f9ee-472b-aebd-70cebea276cc
-        computeOrder: 20
-        position:
-          serializedVersion: 2
-          x: 1493
-          y: -243.5
-          width: 152
-          height: 113
-        expanded: 0
-        debug: 0
-        nodeLock: 0
-        condition: 0
-        compareOperator: 0
-    - rid: 1837308777363144956
-      type: {class: IfNode, ns: , asm: NewAssembly}
-      data:
-        nodeCustomName: 
-        GUID: 7f530596-6ca8-4964-bc8f-d64cc6906b0f
-        computeOrder: 21
-        position:
-          serializedVersion: 2
-          x: 1793
-          y: -336.5
-          width: 152
-          height: 113
-        expanded: 0
-        debug: 0
-        nodeLock: 0
-        condition: 0
-        compareOperator: 0
-    - rid: 1837308777363144957
-      type: {class: IfNode, ns: , asm: NewAssembly}
-      data:
-        nodeCustomName: 
-        GUID: f3ed1055-d1f3-4db6-b95e-ec5fb8ce67c1
-        computeOrder: 22
-        position:
-          serializedVersion: 2
-          x: 1544
-          y: -247.5
-          width: 152
-          height: 113
-        expanded: 0
-        debug: 0
-        nodeLock: 0
-        condition: 0
-        compareOperator: 0
-    - rid: 1837308777363144958
-      type: {class: IfNode, ns: , asm: NewAssembly}
-      data:
-        nodeCustomName: 
-        GUID: c207cda4-840d-4a7e-a754-d2572d8ac91a
-        computeOrder: 23
-        position:
-          serializedVersion: 2
-          x: 1544
-          y: -247.5
-          width: 152
-          height: 113
-        expanded: 0
-        debug: 0
-        nodeLock: 0
-        condition: 0
-        compareOperator: 0
-    - rid: 1837308777363144959
-      type: {class: IfNode, ns: , asm: NewAssembly}
-      data:
-        nodeCustomName: 
-        GUID: 1a614c1a-a233-49dc-956a-875ec64a3dd3
-        computeOrder: 24
-        position:
-          serializedVersion: 2
-          x: 1556
-          y: -143
-          width: 100
-          height: 100
-        expanded: 0
-        debug: 0
-        nodeLock: 0
-        condition: 0
-        compareOperator: 0
+    RefIds: []

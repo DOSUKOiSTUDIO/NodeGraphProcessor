@@ -1,5 +1,4 @@
-﻿using System.Collections;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UIElements;
 using UnityEditor.UIElements;
@@ -48,6 +47,7 @@ namespace GraphProcessor
 			AddDrawer(typeof(Gradient), typeof(GradientField));
 			AddDrawer(typeof(UnityEngine.Object), typeof(ObjectField));
 			AddDrawer(typeof(Rect), typeof(RectField));
+			
 		}
 
 		static void AddDrawer(Type fieldType, Type drawerType)

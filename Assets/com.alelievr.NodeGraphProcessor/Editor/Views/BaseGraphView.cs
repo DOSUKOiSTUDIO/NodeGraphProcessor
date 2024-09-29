@@ -9,6 +9,7 @@ using System.Linq;
 using System;
 using UnityEditor.SceneManagement;
 using System.Reflection;
+using Unity.EditorCoroutines.Editor;
 using Status = UnityEngine.UIElements.DropdownMenuAction.Status;
 using Object = UnityEngine.Object;
 
@@ -114,16 +115,7 @@ namespace GraphProcessor
         /// <summary>
         /// Object to handle nodes that shows their UI in the inspector.
         /// </summary>
-        [SerializeField]
-        protected NodeInspectorObject nodeInspector
-        {
-            get
-            {
-                if (graph.nodeInspectorReference == null)
-                    graph.nodeInspectorReference = CreateNodeInspectorObject();
-                return graph.nodeInspectorReference as NodeInspectorObject;
-            }
-        }
+        [NonSerialized] protected NodeInspectorObject nodeInspector;
 
         /// <summary>
         /// Workaround object for creating exposed parameter property fields.
@@ -158,6 +150,9 @@ namespace GraphProcessor
 
             createNodeMenu = ScriptableObject.CreateInstance<CreateNodeMenuWindow>();
             createNodeMenu.Initialize(this, window);
+
+            if (nodeInspector == null)
+                nodeInspector = CreateNodeInspectorObject();
 
             this.StretchToParentSize();
         }
@@ -363,14 +358,14 @@ namespace GraphProcessor
                                     foreach (var edge in pv.GetEdges().ToList())
                                         Disconnect(edge);
 
-                            nodeInspector.NodeViewRemoved(nodeView.nodeTarget);
+                            nodeInspector.NodeViewRemoved(nodeView);
                             ExceptionToLog.Call(() => nodeView.OnRemoved());
                             graph.RemoveNode(nodeView.nodeTarget);
                             UpdateSerializedProperties();
                             RemoveElement(nodeView);
                             if (Selection.activeObject == nodeInspector)
                                 UpdateNodeInspectorSelection();
-
+                            //これは新しく追加されたっぽい
                             SyncSerializedPropertyPathes();
                             return true;
                         case GroupView group:
@@ -594,10 +589,8 @@ namespace GraphProcessor
         {
             schedule.Execute(() =>
             {
-#if original
                 if (DoesSelectionContainsInspectorNodes())
                     UpdateNodeInspectorSelection();
-#endif
             }).ExecuteLater(1);
         }
 
@@ -608,228 +601,183 @@ namespace GraphProcessor
                 // Close all settings windows:
                 nodeViews.ForEach(v => v.CloseSettings());
 
-
-#if original
-			if (DoesSelectionContainsInspectorNodes())
-				UpdateNodeInspectorSelection();
-#endif
-            if (selection.OfType<BaseNodeView>().Any())
+            if (DoesSelectionContainsInspectorNodes())
                 UpdateNodeInspectorSelection();
         }
 
-#if original
         private bool DoesSelectionContainsInspectorNodes()
         {
-
-			//var selectedNodeViews = selection.Where(s => s is BaseNodeView).ToList();
-			var selectedNodeViews = selection.OfType<BaseNodeView>().ToList();
-			//var selectedNodesNotInInspector = selectedNodeViews.Except(nodeInspector.selectedNodeViews).ToList();
-			var selectedNodesNotInInspector = selectedNodeViews
-				.Where(x => !nodeInspector.selectedNodes.Contains(x.nodeTarget)).ToList();
-			//var nodeInInspectorWithoutSelectedNodes = nodeInspector.selectedNodeViews.Except(selectedNodeViews).ToList();
-			var nodeInInspectorWithoutSelectedNodes = nodeInspector.selectedNodes.Where(x =>
-			{
-				return x != null && !selectedNodeViews.Select(x=>x.nodeTarget).Contains(x);
-			}).ToList();
-
-			return selectedNodesNotInInspector.Any() || nodeInInspectorWithoutSelectedNodes.Any();
+            var selectedNodes = selection.Where(s => s is BaseNodeView).ToList();
+            var selectedNodesNotInInspector = selectedNodes.Except(nodeInspector.selectedNodes).ToList();
+            var nodeInInspectorWithoutSelectedNodes = nodeInspector.selectedNodes.Except(selectedNodes).ToList();
+            //有另外一种可能，先选中其中一个节点A，然后选中Assets面板中一个资产，当前激活object就为这个新选中的资产，
+            //此时再回来节点编辑器选择节点A将不会再Inspector面板显示，这不太行，所以需要最后再加一种判断
+            return selectedNodesNotInInspector.Any() || nodeInInspectorWithoutSelectedNodes.Any() ||
+                   Selection.activeObject != nodeInspector;
         }
-#endif
 
-        void DragPerformedCallback(DragPerformEvent e)
+        private void DragPerformedCallback(DragPerformEvent e)
+        {
+            var mousePos =
+                (e.currentTarget as VisualElement).ChangeCoordinatesTo(contentViewContainer, e.localMousePosition);
+            var dragData = DragAndDrop.GetGenericData("DragSelection") as List<ISelectable>;
+
+            // Drag and Drop for elements inside the graph
+            if (dragData != null)
             {
-                var mousePos =
-                    (e.currentTarget as VisualElement).ChangeCoordinatesTo(contentViewContainer, e.localMousePosition);
-                var dragData = DragAndDrop.GetGenericData("DragSelection") as List<ISelectable>;
-
-                // Drag and Drop for elements inside the graph
-                if (dragData != null)
-                {
-                    var exposedParameterFieldViews = dragData.OfType<ExposedParameterFieldView>();
-                    if (exposedParameterFieldViews.Any())
-                        foreach (var paramFieldView in exposedParameterFieldViews)
-                        {
-                            RegisterCompleteObjectUndo("Create Parameter Node");
-                            var paramNode = BaseNode.CreateFromType<ParameterNode>(mousePos);
-                            paramNode.parameterGUID = paramFieldView.parameter.guid;
-                            AddNode(paramNode);
-                        }
-                }
-
-                // External objects drag and drop
-                if (DragAndDrop.objectReferences.Length > 0)
-                {
-                    RegisterCompleteObjectUndo("Create Node From Object(s)");
-                    foreach (var obj in DragAndDrop.objectReferences)
+                var exposedParameterFieldViews = dragData.OfType<ExposedParameterFieldView>();
+                if (exposedParameterFieldViews.Any())
+                    foreach (var paramFieldView in exposedParameterFieldViews)
                     {
-                        var objectType = obj.GetType();
-
-                        foreach (var kp in nodeTypePerCreateAssetType)
-                            if (kp.Key.IsAssignableFrom(objectType))
-                                try
-                                {
-                                    var node = BaseNode.CreateFromType(kp.Value.nodeType, mousePos);
-                                    if ((bool) kp.Value.initalizeNodeFromObject.Invoke(node, new[] {obj}))
-                                    {
-                                        AddNode(node);
-                                        break;
-                                    }
-                                }
-                                catch (Exception exception)
-                                {
-                                    Debug.LogException(exception);
-                                }
+                        RegisterCompleteObjectUndo("Create Parameter Node");
+                        var paramNode = BaseNode.CreateFromType<ParameterNode>(mousePos);
+                        paramNode.parameterGUID = paramFieldView.parameter.guid;
+                        AddNode(paramNode);
                     }
-                }
             }
 
-            void DragUpdatedCallback(DragUpdatedEvent e)
+            // External objects drag and drop
+            if (DragAndDrop.objectReferences.Length > 0)
             {
-                var dragData = DragAndDrop.GetGenericData("DragSelection") as List<ISelectable>;
-                var dragObjects = DragAndDrop.objectReferences;
-                var dragging = false;
+                RegisterCompleteObjectUndo("Create Node From Object(s)");
+                foreach (var obj in DragAndDrop.objectReferences)
+                {
+                    var objectType = obj.GetType();
 
-                if (dragData != null)
-                    // Handle drag from exposed parameter view
-                    if (dragData.OfType<ExposedParameterFieldView>().Any())
-                        dragging = true;
+                    foreach (var kp in nodeTypePerCreateAssetType)
+                        if (kp.Key.IsAssignableFrom(objectType))
+                            try
+                            {
+                                var node = BaseNode.CreateFromType(kp.Value.nodeType, mousePos);
+                                if ((bool) kp.Value.initalizeNodeFromObject.Invoke(node, new[] {obj}))
+                                    AddNode(node);
+                                else
+                                    break;
+                            }
+                            catch (Exception exception)
+                            {
+                                Debug.LogException(exception);
+                            }
+                }
+            }
+        }
 
-                if (dragObjects.Length > 0)
+        private void DragUpdatedCallback(DragUpdatedEvent e)
+        {
+            var dragData = DragAndDrop.GetGenericData("DragSelection") as List<ISelectable>;
+            var dragObjects = DragAndDrop.objectReferences;
+            var dragging = false;
+
+            if (dragData != null)
+                // Handle drag from exposed parameter view
+                if (dragData.OfType<ExposedParameterFieldView>().Any())
                     dragging = true;
 
-                if (dragging)
-                    DragAndDrop.visualMode = DragAndDropVisualMode.Generic;
+            if (dragObjects.Length > 0)
+                dragging = true;
 
-                UpdateNodeInspectorSelection();
-            }
+            if (dragging)
+                DragAndDrop.visualMode = DragAndDropVisualMode.Generic;
 
-            #endregion
+            UpdateNodeInspectorSelection();
+        }
 
-            #region Initialization
+        #endregion
 
-            void ReloadView()
+        #region Initialization
+
+        private void ReloadView()
+        {
+            // Force the graph to reload his data (Undo have updated the serialized properties of the graph
+            // so the one that are not serialized need to be synchronized)
+            graph.Deserialize();
+
+            EditorCoroutineUtility.StartCoroutine(Initialize(graph), this);
+        }
+
+        public IEnumerator Initialize(BaseGraph graph)
+        {
+            if (this.graph != null)
             {
-                // Force the graph to reload his data (Undo have updated the serialized properties of the graph
-                // so the one that are not serialized need to be synchronized)
-                graph.Deserialize();
-
-                // Get selected nodes
-                var selectedNodeGUIDs = new List<string>();
-                foreach (var e in selection)
-                    if (e is BaseNodeView v && Contains(v))
-                        selectedNodeGUIDs.Add(v.nodeTarget.GUID);
-
-                // Remove everything
-                RemoveNodeViews();
-                RemoveEdges();
-                RemoveGroups();
-#if UNITY_2020_1_OR_NEWER
-                RemoveStrickyNotes();
-#endif
-                RemoveStackNodeViews();
-
-                UpdateSerializedProperties();
-
-                // And re-add with new up to date datas
-                InitializeNodeViews();
-                InitializeEdgeViews();
-                InitializeGroups();
-                InitializeStickyNotes();
-                InitializeStackNodes();
-
-                Reload();
-
-                UpdateComputeOrder();
-
-                // Restore selection after re-creating all views
-                // selection = nodeViews.Where(v => selectedNodeGUIDs.Contains(v.nodeTarget.GUID)).Select(v => v as ISelectable).ToList();
-                foreach (var guid in selectedNodeGUIDs)
-                    AddToSelection(nodeViews.FirstOrDefault(n => n.nodeTarget.GUID == guid));
-
-                UpdateNodeInspectorSelection();
-            }
-
-            public void Initialize(BaseGraph graph)
-            {
-                if (this.graph != null)
-                {
-                    SaveGraphToDisk();
-                    // Close pinned windows from old graph:
-                    ClearGraphElements();
-                    NodeProvider.UnloadGraph(graph);
-                }
-
-                this.graph = graph;
-
-                exposedParameterFactory = new ExposedParameterFieldFactory(graph);
-
-                UpdateSerializedProperties();
-
-                connectorListener = CreateEdgeConnectorListener();
-
-                // When pressing ctrl-s, we save the graph
-                EditorSceneManager.sceneSaved += _ => SaveGraphToDisk();
-                RegisterCallback<KeyDownEvent>(e =>
-                {
-                    if (e.keyCode == KeyCode.S && e.actionKey)
-                        SaveGraphToDisk();
-                });
-
+                SaveGraphToDisk();
+                // Close pinned windows from old graph:
                 ClearGraphElements();
-
-                InitializeGraphView();
-                InitializeNodeViews();
-                InitializeEdgeViews();
-                InitializeViews();
-                InitializeGroups();
-                InitializeStickyNotes();
-                InitializeStackNodes();
-
-                initialized?.Invoke();
-                UpdateComputeOrder();
-
-                InitializeView();
-
-                NodeProvider.LoadGraph(graph);
-
-                // Register the nodes that can be created from assets
-                foreach (var nodeInfo in NodeProvider.GetNodeMenuEntries(graph))
-                {
-                    var interfaces = nodeInfo.type.GetInterfaces();
-                    var exceptInheritedInterfaces = interfaces.Except(interfaces.SelectMany(t => t.GetInterfaces()));
-                    foreach (var i in interfaces)
-                        if (i.IsGenericType && i.GetGenericTypeDefinition() == typeof(ICreateNodeFrom<>))
-                        {
-                            var genericArgumentType = i.GetGenericArguments()[0];
-                            var initializeFunction = nodeInfo.type.GetMethod(
-                                nameof(ICreateNodeFrom<Object>.InitializeNodeFromObject),
-                                BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance,
-                                null, new Type[] {genericArgumentType}, null
-                            );
-
-                            // We only add the type that implements the interface, not it's children
-                            if (initializeFunction.DeclaringType == nodeInfo.type)
-                                nodeTypePerCreateAssetType[genericArgumentType] = (nodeInfo.type, initializeFunction);
-                        }
-                }
+                NodeProvider.UnloadGraph(graph);
             }
 
-            public void ClearGraphElements()
+            this.graph = graph;
+
+            exposedParameterFactory = new ExposedParameterFieldFactory(graph);
+
+            UpdateSerializedProperties();
+
+            connectorListener = CreateEdgeConnectorListener();
+
+            // When pressing ctrl-s, we save the graph
+            EditorSceneManager.sceneSaved += _ => SaveGraphToDisk();
+            RegisterCallback<KeyDownEvent>(e =>
             {
-                RemoveGroups();
-                RemoveNodeViews();
-                RemoveEdges();
-                RemoveStackNodeViews();
-                RemovePinnedElementViews();
+                if (e.keyCode == KeyCode.S && e.actionKey)
+                    SaveGraphToDisk();
+            });
+
+            ClearGraphElements();
+
+            InitializeGraphView();
+
+            yield return InitializeNodeViews();
+
+            yield return InitializeEdgeViews();
+            yield return InitializeViews();
+            yield return InitializeGroups();
+            yield return InitializeStickyNotes();
+            yield return InitializeStackNodes();
+
+            initialized?.Invoke();
+            UpdateComputeOrder();
+
+            InitializeView();
+
+            NodeProvider.LoadGraph(graph);
+
+            // Register the nodes that can be created from assets
+            foreach (var nodeInfo in NodeProvider.GetNodeMenuEntries(graph))
+            {
+                var interfaces = nodeInfo.type.GetInterfaces();
+                var exceptInheritedInterfaces = interfaces.Except(interfaces.SelectMany(t => t.GetInterfaces()));
+                foreach (var i in interfaces)
+                    if (i.IsGenericType && i.GetGenericTypeDefinition() == typeof(ICreateNodeFrom<>))
+                    {
+                        var genericArgumentType = i.GetGenericArguments()[0];
+                        var initializeFunction = nodeInfo.type.GetMethod(
+                            nameof(ICreateNodeFrom<Object>.InitializeNodeFromObject),
+                            BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance,
+                            null, new Type[] {genericArgumentType}, null
+                        );
+
+                        // We only add the type that implements the interface, not it's children
+                        if (initializeFunction.DeclaringType == nodeInfo.type)
+                            nodeTypePerCreateAssetType[genericArgumentType] = (nodeInfo.type, initializeFunction);
+                    }
+            }
+        }
+
+        public void ClearGraphElements()
+        {
+            RemoveGroups();
+            RemoveNodeViews();
+            RemoveEdges();
+            RemoveStackNodeViews();
+            RemovePinnedElementViews();
 #if UNITY_2020_1_OR_NEWER
-                RemoveStrickyNotes();
+            RemoveStrickyNotes();
 #endif
-            }
+        }
 
-            void UpdateSerializedProperties()
-            {
-                serializedGraph = new SerializedObject(graph);
-            }
+        private void UpdateSerializedProperties()
+        {
+            serializedGraph = new SerializedObject(graph);
+        }
 
         /// <summary>
         /// Allow you to create your own edge connector listener
@@ -857,23 +805,27 @@ namespace GraphProcessor
             onExposedParameterListChanged?.Invoke();
         }
 
-        private void InitializeNodeViews()
+        private IEnumerator InitializeNodeViews()
         {
             graph.nodes.RemoveAll(n => n == null);
 
             foreach (var node in graph.nodes)
             {
+                yield return 0;
                 var v = AddNodeView(node);
             }
         }
 
-        private void InitializeEdgeViews()
+        private IEnumerator InitializeEdgeViews()
         {
             // Sanitize edges in case a node broke something while loading
             graph.edges.RemoveAll(edge => edge == null || edge.inputNode == null || edge.outputNode == null);
 
             foreach (var serializedEdge in graph.edges)
             {
+                if (EditorApplication.timeSinceStartup - BaseGraphWindow.LastTimePoint >
+                    BaseGraphWindow.LoadViewsMaxLimitTime)
+                    yield return 0;
                 nodeViewsPerNode.TryGetValue(serializedEdge.inputNode, out var inputNodeView);
                 nodeViewsPerNode.TryGetValue(serializedEdge.outputNode, out var outputNodeView);
                 if (inputNodeView == null || outputNodeView == null)
@@ -891,31 +843,51 @@ namespace GraphProcessor
             }
         }
 
-        private void InitializeViews()
+        private IEnumerator InitializeViews()
         {
             foreach (var pinnedElement in graph.pinnedElements)
+            {
+                if (EditorApplication.timeSinceStartup - BaseGraphWindow.LastTimePoint >
+                    BaseGraphWindow.LoadViewsMaxLimitTime)
+                    yield return 0;
                 if (pinnedElement.opened)
                     OpenPinned(pinnedElement.editorType.type);
+            }
         }
 
-        private void InitializeGroups()
+        private IEnumerator InitializeGroups()
         {
             foreach (var group in graph.groups)
+            {
+                if (EditorApplication.timeSinceStartup - BaseGraphWindow.LastTimePoint >
+                    BaseGraphWindow.LoadViewsMaxLimitTime)
+                    yield return 0;
                 AddGroupView(group);
+            }
         }
 
-        private void InitializeStickyNotes()
+        private IEnumerator InitializeStickyNotes()
         {
 #if UNITY_2020_1_OR_NEWER
             foreach (var group in graph.stickyNotes)
+            {
+                if (EditorApplication.timeSinceStartup - BaseGraphWindow.LastTimePoint >
+                    BaseGraphWindow.LoadViewsMaxLimitTime)
+                    yield return 0;
                 AddStickyNoteView(group);
+            }
 #endif
         }
 
-        private void InitializeStackNodes()
+        private IEnumerator InitializeStackNodes()
         {
             foreach (var stackNode in graph.stackNodes)
+            {
+                if (EditorApplication.timeSinceStartup - BaseGraphWindow.LastTimePoint >
+                    BaseGraphWindow.LoadViewsMaxLimitTime)
+                    yield return 0;
                 AddStackNodeView(stackNode);
+            }
         }
 
         protected virtual void InitializeManipulators()
@@ -935,35 +907,12 @@ namespace GraphProcessor
 
         public void UpdateNodeInspectorSelection()
         {
-#if original
-	//		if (nodeInspector.previouslySelectedObject != Selection.activeObject)
-	//			nodeInspector.previouslySelectedObject = Selection.activeObject;
-	//		HashSet<BaseNodeView> selectedNodeViews = new HashSet<BaseNodeView>();
+            nodeInspector.selectedNodes.Clear();
+            foreach (var e in selection)
+                if (e is BaseNodeView v && Contains(v) && v.nodeTarget.needsInspector)
+                    nodeInspector.selectedNodes.Add(v);
 
-			nodeInspector.selectedNodes.Clear();
-			foreach (var e in selection)
-			{
-				if (e is BaseNodeView v && this.Contains(v) && v.nodeTarget.needsInspector)
-
-					//selectedNodeViews.Add(v);
-
-					nodeInspector.selectedNodes.Add(v.nodeTarget);
-			}
-
-
-//			nodeInspector.UpdateSelectedNodes(selectedNodeViews);
-//			if (Selection.activeObject != nodeInspector && selectedNodeViews.Count > 0)
-//				Selection.activeObject = nodeInspector;
-
-			if (nodeInspector.selectedNodes.Count > 0)
-			{
-				Selection.activeObject = nodeInspector;
-			}
-#endif
-
-
-            nodeInspector.selectedNode = selection.OfType<BaseNodeView>().Select(x => x.nodeTarget).FirstOrDefault();
-            if (nodeInspector.selectedNode != null) Selection.activeObject = nodeInspector;
+            if (nodeInspector.selectedNodes.Count > 0) Selection.activeObject = nodeInspector;
         }
 
         public BaseNodeView AddNode(BaseNode node)
@@ -1305,7 +1254,7 @@ namespace GraphProcessor
             if (graph == null)
                 return;
 
-            EditorUtility.SetDirty(graph);
+            GraphCreateAndSaveHelper.SaveGraphToDisk(graph);
         }
 
         public void ToggleView<T>() where T : PinnedElementView

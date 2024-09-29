@@ -1,0 +1,76 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 569dab0c6a0ba7343b4601f328e1875c, type: 3}
+  m_Name: asdasdsad
+  m_EditorClassIdentifier: 
+  serializedNodes: []
+  nodes:
+  - nodeCustomName: 
+    GUID: eb87a827-1ffb-4790-974d-370f2b279e50
+    computeOrder: 0
+    position:
+      serializedVersion: 2
+      x: 387
+      y: 220
+      width: 100
+      height: 100
+    expanded: 0
+    debug: 0
+    nodeLock: 0
+  - nodeCustomName: 
+    GUID: 38563dd4-1366-42a6-99bb-bd6dd755018d
+    computeOrder: 1
+    position:
+      serializedVersion: 2
+      x: 350
+      y: 139
+      width: 111
+      height: 42
+    expanded: 0
+    debug: 0
+    nodeLock: 0
+  - nodeCustomName: 
+    GUID: 27945708-aa4b-40ae-aa8f-7c696d847d90
+    computeOrder: 2
+    position:
+      serializedVersion: 2
+      x: 132
+      y: 139
+      width: 69
+      height: 89
+    expanded: 0
+    debug: 0
+    nodeLock: 0
+  - nodeCustomName: 
+    GUID: 15a4e869-503c-406e-b3bb-e73da8b910b6
+    computeOrder: 3
+    position:
+      serializedVersion: 2
+      x: 238.5
+      y: 18.720001
+      width: 69
+      height: 75
+    expanded: 0
+    debug: 0
+    nodeLock: 0
+  edges: []
+  groups: []
+  stackNodes: []
+  pinnedElements: []
+  exposedParameters: []
+  serializedParameterList: []
+  stickyNotes: []
+  position: {x: 0, y: 28, z: 0}
+  scale: {x: 1, y: 1, z: 1}
+  references:
+    version: 2
+    RefIds: []

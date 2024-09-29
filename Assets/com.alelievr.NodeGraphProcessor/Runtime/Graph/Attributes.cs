@@ -54,6 +54,22 @@ namespace GraphProcessor
 	public class VerticalAttribute : Attribute
 	{
 	}
+	
+	/// <summary>
+	/// 决定一个Port是否绘制其Icon的特性
+	/// 当然如果使用了CustomPortBehavior提供自定义PortData，就需要在CustomPortBehavior标记的方法中做好处理
+	/// </summary>
+	[AttributeUsage(AttributeTargets.Field, AllowMultiple = false)]
+	public class ShowPortIconAttribute : Attribute
+	{
+		public bool ShowIcon = true;
+		/// <summary>
+		/// 在USS文件中匹配的数据类型，用于无法从默认类型获取绘制图标时进行重定向
+		/// 例如Dictionary无法找到其类型名对应的PortIcon文件，可以设置这个IconNameMathInUSSFile为Object作为fallback
+		/// </summary>
+		public string IconNameMatchedInUSSFile;
+	}
+
 
 	/// <summary>
 	/// Register the node in the NodeProvider class. The node will also be available in the node creation window.
@@ -79,7 +95,6 @@ namespace GraphProcessor
 	/// Set a custom drawer for a field. It can then be created using the FieldFactory
 	/// </summary>
 	[AttributeUsage(AttributeTargets.Class, AllowMultiple = false)]
-	[Obsolete("You can use the standard Unity CustomPropertyDrawer instead.")]
 	public class FieldDrawerAttribute : Attribute
 	{
 		public Type		fieldType;
@@ -91,56 +106,6 @@ namespace GraphProcessor
 		public FieldDrawerAttribute(Type fieldType)
 		{
 			this.fieldType = fieldType;
-		}
-	}
-
-	/// <summary>
-	/// Allow you to customize the input function of a port
-	/// </summary>
-	[AttributeUsage(AttributeTargets.Method, AllowMultiple = false)]
-	public class CustomPortInputAttribute : Attribute
-	{
-		public string	fieldName;
-		public Type		inputType;
-		public bool		allowCast;
-
-		/// <summary>
-		/// Allow you to customize the input function of a port.
-		/// See CustomPortsNode example in Samples.
-		/// </summary>
-		/// <param name="fieldName">local field of the node</param>
-		/// <param name="inputType">type of input of the port</param>
-		/// <param name="allowCast">if cast is allowed when connecting an edge</param>
-		public CustomPortInputAttribute(string fieldName, Type inputType, bool allowCast = true)
-		{
-			this.fieldName = fieldName;
-			this.inputType = inputType;
-			this.allowCast = allowCast;
-		}
-	}
-
-	/// <summary>
-	/// Allow you to customize the input function of a port
-	/// </summary>
-	[AttributeUsage(AttributeTargets.Method, AllowMultiple = false)]
-	public class CustomPortOutputAttribute : Attribute
-	{
-		public string	fieldName;
-		public Type		outputType;
-		public bool		allowCast;
-
-		/// <summary>
-		/// Allow you to customize the output function of a port.
-		/// See CustomPortsNode example in Samples.
-		/// </summary>
-		/// <param name="fieldName">local field of the node</param>
-		/// <param name="inputType">type of input of the port</param>
-		/// <param name="allowCast">if cast is allowed when connecting an edge</param>
-		public CustomPortOutputAttribute(string fieldName, Type outputType, bool allowCast = true)
-		{
-			this.fieldName = fieldName;
-			this.outputType = outputType;
-			this.allowCast = allowCast;
 		}
 	}
 
@@ -215,11 +180,11 @@ namespace GraphProcessor
 	}
 
 	[AttributeUsage(AttributeTargets.Field, AllowMultiple = false)]
-	public class ShowInGraphInspector : Attribute
+	public class ShowinGraphInspector : Attribute
 	{
 		public bool showInNode;
 
-		public ShowInGraphInspector(bool showInNode = false)
+		public ShowinGraphInspector(bool showInNode = false)
 		{
 			this.showInNode = showInNode;
 		}

@@ -1,6 +1,5 @@
 using UnityEngine;
 using UnityEditor;
-using UnityEditor.UIElements;
 using UnityEngine.UIElements;
 using UnityEditor.Experimental.GraphView;
 
@@ -51,7 +50,7 @@ namespace GraphProcessor
 			// We use this little trick to retrieve the label once it is added to the graph
 			visualStyle = badgeText.GetHashCode().ToString();
 		}
-
+		
 		protected override void ExecuteDefaultAction(EventBase evt)
 		{
 			// When the mouse enter the icon, this will add the label to the hierarchy
